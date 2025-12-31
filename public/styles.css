@@ -1,0 +1,1161 @@
+/* Fonts */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap');
+
+/* Basic layout scaffolding */
+body,
+html {
+    margin: 0;
+    padding: 0;
+    width: 100%;
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+    /* 1. Page background (outside the stage) */
+    background: radial-gradient(circle at center, #1a202c 0%, #0d1117 100%);
+    color: #fff;
+    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+    -webkit-font-smoothing: antialiased;
+}
+
+/* Vignette overlay via pseudo-element */
+body::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    background: radial-gradient(circle, transparent 40%, rgba(0, 0, 0, 0.4) 100%);
+    z-index: 1;
+}
+
+#app {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    z-index: 2;
+    /* Content above vignette */
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 24px;
+    /* Minimum padding for small screens */
+    box-sizing: border-box;
+}
+
+/* 2. Stage wrapper & 3. Stage styling */
+.stage {
+    position: relative;
+    width: 100%;
+    max-width: 1200px;
+    aspect-ratio: 16 / 9;
+    /* Responsive downsizing logic is handled by max-width + flex box + aspect-ratio */
+
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    background: #000;
+
+    /* Styling */
+    border-radius: 24px;
+    overflow: hidden;
+    /* Clips video and overlays */
+
+    /* Frame: Subtle 1px border + Refinement: Faint outer glow combined with deep shadow */
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    box-shadow: 0 40px 80px rgba(0, 0, 0, 0.6), 0 0 30px rgba(255, 255, 255, 0.03);
+}
+
+#video-player,
+video {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    /* Cinematic full bleed */
+}
+
+/* 2. Background: Full-screen overlay with vignette */
+.overlay-backdrop {
+    position: absolute;
+    inset: 0;
+    z-index: 10;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 20px;
+
+    /* Dark overlay + Vignette */
+    background: radial-gradient(circle, rgba(0, 0, 0, 0.4) 0%, rgba(0, 0, 0, 0.85) 100%);
+    backdrop-filter: blur(4px);
+    /* Optional soft blur */
+
+    animation: fadeIn 0.3s ease-out;
+}
+
+/* 3. Overlay Container (Primary Card) */
+.cinematic-card {
+    width: 100%;
+    max-width: 680px;
+    background: linear-gradient(145deg, rgba(12, 20, 35, 0.45), rgba(8, 12, 20, 0.45));
+    /* Reduced opacity (Glass effect) */
+    border-radius: 24px;
+    padding: 10px;
+    /* Outer padding for visual separation */
+    box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(255, 255, 255, 0.05);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 24px;
+}
+
+/* 4. Text Box (Inner Content Panel) */
+.content-panel {
+    width: 100%;
+    box-sizing: border-box;
+    background: rgba(25, 30, 45, 0.4);
+    /* 60% transparency for gentler layering */
+    border-radius: 16px;
+    padding: 32px 40px;
+    text-align: left;
+    /* 1. Left aligned text */
+    border: 1px solid rgba(255, 255, 255, 0.03);
+}
+
+/* 5. Typography */
+.content-panel h2 {
+    margin: 0 0 24px 0;
+    /* More space below question */
+    color: #FFFFFF;
+    /* Brighter for contrast */
+    font-weight: 600;
+    font-size: 28px;
+    /* Larger for hierarchy */
+    letter-spacing: -0.01em;
+    text-wrap: pretty;
+    /* Improved edge raggedness for left alignment */
+    /* Balance is better for centered, pretty/stable better for left */
+    max-width: 90%;
+    /* Prevent edge-to-edge stretching */
+    margin-inline: auto;
+    /* Keep centered */
+}
+
+.content-panel p {
+    margin: 0;
+    color: #DDE1E6;
+    font-size: 18px;
+    line-height: 1.6;
+    font-weight: 400;
+    text-wrap: pretty;
+    /* 2. Better wrapping for left align */
+    max-width: 46ch;
+    /* 3. Slightly wider measure for left-align readability */
+    margin-inline: auto;
+    /* Center the constrained block */
+}
+
+.style-tag {
+    display: inline-block;
+    background: rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 12px;
+    padding: 2px 10px;
+    font-size: 0.9em;
+    font-weight: 600;
+    text-transform: uppercase;
+    color: #edf2f7;
+    margin: 0 4px;
+    vertical-align: middle;
+}
+
+/* 6. Buttons (Primary Action) */
+.ui-button-container {
+    padding-bottom: 24px;
+    /* Breathing room */
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    width: 100%;
+    align-items: center;
+}
+
+.primary-button {
+    background: linear-gradient(180deg, #324a6b 0%, #24344d 100%);
+    /* Desaturated & Darker */
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 12px;
+    /* Less "pill-like" */
+    padding: 12px 32px;
+    /* Reduced height/visual weight */
+    color: #FFFFFF;
+    font-family: 'Inter', sans-serif;
+    font-size: 16px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+    min-width: 160px;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+.primary-button:hover:not(:disabled) {
+    transform: translateY(-1px);
+    box-shadow: 0 6px 16px rgba(59, 91, 133, 0.4);
+    filter: brightness(1.1);
+}
+
+.primary-button:active:not(:disabled) {
+    transform: translateY(1px);
+}
+
+.primary-button:disabled {
+    background: #444;
+    color: #888;
+    cursor: not-allowed;
+    box-shadow: none;
+    border-color: transparent;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: scale(0.98);
+    }
+
+    to {
+        opacity: 1;
+        transform: scale(1);
+    }
+}
+
+/* =============================================
+   AI COACH STYLES
+   ============================================= */
+
+/* Main AI Coach container */
+.ai-coach-container {
+    width: 100%;
+    max-width: 800px;
+    max-height: 85vh;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    padding: 20px;
+    padding-bottom: 60px;
+    /* Extra padding to ensure last element is fully visible */
+
+    /* Scrollbar styling - matching CLEAR intro screen */
+    scrollbar-width: thin;
+    scrollbar-color: rgba(255, 255, 255, 0.2) transparent;
+}
+
+.ai-coach-container::-webkit-scrollbar {
+    width: 6px;
+}
+
+.ai-coach-container::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.ai-coach-container::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.2);
+    border-radius: 3px;
+}
+
+.ai-coach-container::-webkit-scrollbar-thumb:hover {
+    background: rgba(255, 255, 255, 0.3);
+}
+
+/* Feedback panel container - ensure content isn't clipped */
+#ai-coach-feedback-panel {
+    margin-bottom: 24px;
+    /* Extra space at bottom to prevent cropping */
+}
+
+/* Scenario section (video or fallback) */
+.ai-coach-scenario {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+/* Video wrapper */
+.ai-coach-video-wrapper {
+    border-radius: 12px;
+    overflow: hidden;
+    background: rgba(0, 0, 0, 0.3);
+}
+
+.ai-coach-video {
+    width: 100%;
+    display: block;
+    max-height: 300px;
+    object-fit: contain;
+    background: #000;
+}
+
+/* Fallback when video unavailable */
+.ai-coach-video-fallback {
+    background: rgba(25, 30, 45, 0.6);
+    border-radius: 12px;
+    padding: 40px 24px;
+    text-align: center;
+    color: rgba(255, 255, 255, 0.5);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+/* Transcript toggle button */
+.ai-coach-transcript-toggle {
+    background: transparent;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 8px;
+    padding: 8px 16px;
+    color: rgba(255, 255, 255, 0.7);
+    font-family: 'Inter', sans-serif;
+    font-size: 13px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    align-self: flex-start;
+}
+
+.ai-coach-transcript-toggle:hover {
+    background: rgba(255, 255, 255, 0.05);
+    border-color: rgba(255, 255, 255, 0.3);
+}
+
+.ai-coach-transcript-toggle:focus-visible {
+    outline: 2px solid #3b82f6;
+    outline-offset: 2px;
+}
+
+/* Transcript panel */
+.ai-coach-transcript {
+    background: rgba(25, 30, 45, 0.6);
+    border-radius: 12px;
+    padding: 16px 20px;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    font-size: 15px;
+    line-height: 1.6;
+    color: #DDE1E6;
+}
+
+/* Input section */
+.ai-coach-input-section {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.ai-coach-input-section label {
+    font-size: 14px;
+    font-weight: 500;
+    color: rgba(255, 255, 255, 0.8);
+}
+
+.ai-coach-textarea {
+    width: 100%;
+    min-height: 120px;
+    padding: 16px;
+    border-radius: 12px;
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    background: rgba(15, 20, 30, 0.8);
+    color: #fff;
+    font-family: 'Inter', sans-serif;
+    font-size: 16px;
+    line-height: 1.5;
+    resize: vertical;
+    box-sizing: border-box;
+    transition: border-color 0.2s ease;
+}
+
+.ai-coach-textarea:focus {
+    outline: none;
+    border-color: rgba(100, 150, 200, 0.5);
+}
+
+.ai-coach-textarea::placeholder {
+    color: rgba(255, 255, 255, 0.4);
+}
+
+/* Button row */
+.ai-coach-buttons {
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
+    justify-content: center;
+}
+
+.ai-coach-buttons .primary-button {
+    min-width: 140px;
+}
+
+.secondary-button {
+    background: transparent;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 12px;
+    padding: 12px 24px;
+    color: rgba(255, 255, 255, 0.8);
+    font-family: 'Inter', sans-serif;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+.secondary-button:hover:not(:disabled) {
+    background: rgba(255, 255, 255, 0.05);
+    border-color: rgba(255, 255, 255, 0.3);
+}
+
+.secondary-button:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+}
+
+/* AI Coach Back button */
+.ai-coach-back-btn {
+    min-width: 80px;
+}
+
+.ai-coach-back-btn:focus-visible {
+    outline: 2px solid #3b82f6;
+    outline-offset: 2px;
+}
+
+/* Loading state */
+.ai-coach-loading {
+    text-align: center;
+    padding: 24px;
+    color: rgba(255, 255, 255, 0.7);
+    font-size: 16px;
+}
+
+/* Feedback panel */
+.ai-coach-feedback {
+    background: rgba(25, 30, 45, 0.5);
+    border-radius: 16px;
+    padding: 24px;
+    padding-bottom: 32px;
+    /* Extra padding to prevent last element cropping */
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    animation: fadeIn 0.3s ease-out;
+}
+
+/* Score header */
+.ai-coach-score-header {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    padding-bottom: 16px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.ai-coach-score-circle {
+    width: 64px;
+    height: 64px;
+    border-radius: 50%;
+    background: linear-gradient(145deg, #324a6b, #24344d);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 24px;
+    font-weight: 700;
+    color: #fff;
+    border: 2px solid rgba(255, 255, 255, 0.1);
+}
+
+.ai-coach-score-label {
+    font-size: 14px;
+    color: rgba(255, 255, 255, 0.6);
+}
+
+/* CLEAR scores grid */
+.clear-score-grid {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 8px;
+}
+
+.clear-score-item {
+    background: rgba(15, 20, 30, 0.5);
+    border-radius: 10px;
+    padding: 16px 10px;
+    text-align: center;
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    cursor: pointer;
+    /* Indicates hover interaction */
+    transition: background 0.2s ease;
+}
+
+.clear-score-item:hover {
+    background: rgba(25, 35, 50, 0.6);
+}
+
+.clear-score-item .label {
+    font-size: 13px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: rgba(255, 255, 255, 0.6);
+    margin-bottom: 6px;
+}
+
+.clear-score-item .value {
+    font-size: 26px;
+    font-weight: 700;
+    color: #fff;
+}
+
+/* CLEAR Score Tooltips - Portal-based (rendered at document.body) */
+.clear-score-item {
+    position: relative;
+}
+
+.clear-score-item:focus {
+    outline: 2px solid rgba(100, 150, 200, 0.6);
+    outline-offset: 2px;
+}
+
+/* Portal tooltip - position:fixed for viewport-relative placement */
+.clear-tooltip-portal {
+    position: fixed;
+    width: max-content;
+    max-width: 280px;
+    background: rgba(20, 25, 35, 0.98);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    border-radius: 10px;
+    padding: 14px 16px;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
+    z-index: 9999;
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.15s ease, visibility 0.15s ease;
+    pointer-events: none;
+    text-align: left;
+    white-space: normal;
+}
+
+.clear-tooltip-portal.visible {
+    opacity: 1;
+    visibility: visible;
+}
+
+/* Tooltip arrow - default above (arrow points down) */
+.clear-tooltip-portal::after {
+    content: '';
+    position: absolute;
+    top: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+    border: 6px solid transparent;
+    border-top-color: rgba(20, 25, 35, 0.98);
+}
+
+/* Tooltip below trigger - arrow points up */
+.clear-tooltip-portal.tooltip-below::after {
+    top: auto;
+    bottom: 100%;
+    border-top-color: transparent;
+    border-bottom-color: rgba(20, 25, 35, 0.98);
+}
+
+/* Tooltip content styles */
+.clear-tooltip-definition {
+    font-size: 13px;
+    line-height: 1.5;
+    color: #fff;
+    margin-bottom: 8px;
+}
+
+.clear-tooltip-lookfor {
+    font-size: 12px;
+    line-height: 1.4;
+    color: rgba(255, 255, 255, 0.7);
+}
+
+.clear-tooltip-lookfor .lookfor-label {
+    font-weight: 600;
+    color: rgba(150, 180, 220, 0.9);
+}
+
+/* Scale section */
+.clear-tooltip-scale {
+    margin-top: 8px;
+    padding-top: 8px;
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+    font-size: 11px;
+    line-height: 1.5;
+    color: rgba(255, 255, 255, 0.6);
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.clear-tooltip-scale .scale-label {
+    font-weight: 600;
+    color: rgba(150, 180, 220, 0.8);
+    margin-bottom: 2px;
+}
+
+.clear-tooltip-scale .scale-item {
+    padding-left: 8px;
+}
+
+/* Mobile adjustments */
+@media (max-width: 600px) {
+    .clear-score-grid {
+        grid-template-columns: repeat(3, 1fr);
+    }
+
+    .clear-tooltip-portal {
+        max-width: 240px;
+    }
+}
+
+/* Feedback sections */
+.ai-coach-section {
+    padding-top: 12px;
+}
+
+.ai-coach-section h4 {
+    margin: 0 0 8px 0;
+    font-size: 13px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: rgba(255, 255, 255, 0.5);
+}
+
+.ai-coach-section ul {
+    margin: 0;
+    padding-left: 20px;
+    color: #DDE1E6;
+    font-size: 15px;
+    line-height: 1.6;
+}
+
+.ai-coach-section li {
+    margin-bottom: 6px;
+}
+
+.ai-coach-section p {
+    margin: 0;
+    color: #DDE1E6;
+    font-size: 15px;
+    line-height: 1.6;
+}
+
+/* Rewrite box */
+.rewrite-box {
+    background: rgba(50, 74, 107, 0.2);
+    border-left: 3px solid rgba(100, 150, 200, 0.5);
+    border-radius: 0 8px 8px 0;
+    padding: 16px 20px;
+    margin-top: 8px;
+}
+
+.rewrite-box .rewrite-text {
+    font-size: 16px;
+    font-style: italic;
+    color: #fff;
+    margin-bottom: 12px;
+    line-height: 1.5;
+}
+
+.rewrite-box ul {
+    margin: 0;
+    padding-left: 20px;
+    font-size: 14px;
+    color: rgba(255, 255, 255, 0.8);
+}
+
+/* Coaching question */
+.coaching-question {
+    background: rgba(100, 80, 50, 0.15);
+    border-radius: 12px;
+    padding: 16px 20px;
+    border: 1px solid rgba(200, 150, 50, 0.2);
+}
+
+.coaching-question p {
+    margin: 0;
+    font-size: 16px;
+    color: #f0e6d2;
+    font-style: italic;
+}
+
+/* Error state */
+.ai-coach-error {
+    background: rgba(180, 60, 60, 0.2);
+    border: 1px solid rgba(180, 60, 60, 0.4);
+    border-radius: 12px;
+    padding: 16px 20px;
+    color: #f0b0b0;
+    text-align: center;
+}
+
+/* Risks section */
+.ai-coach-risks {
+    background: rgba(180, 100, 50, 0.1);
+    border: 1px solid rgba(180, 100, 50, 0.2);
+    border-radius: 8px;
+    padding: 12px 16px;
+}
+
+.ai-coach-risks h4 {
+    color: rgba(255, 180, 100, 0.8);
+}
+
+.ai-coach-risks ul {
+    color: rgba(255, 200, 150, 0.9);
+}
+
+/* Collapsible toggle button */
+.ai-coach-toggle-btn {
+    background: transparent;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 8px;
+    padding: 10px 16px;
+    color: rgba(255, 255, 255, 0.8);
+    font-family: 'Inter', sans-serif;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    width: 100%;
+    justify-content: center;
+}
+
+.ai-coach-toggle-btn:hover {
+    background: rgba(255, 255, 255, 0.05);
+    border-color: rgba(255, 255, 255, 0.3);
+}
+
+.ai-coach-toggle-btn::before {
+    content: '▶';
+    font-size: 10px;
+    transition: transform 0.2s ease;
+}
+
+.ai-coach-toggle-btn[aria-expanded="true"]::before {
+    transform: rotate(90deg);
+}
+
+/* Collapsible content */
+.ai-coach-collapsible-content {
+    margin-top: 12px;
+}
+
+/* =============================================
+   CLEAR INTRO SCREEN STYLES
+   ============================================= */
+
+/* Make content panel scrollable when content is long */
+.cinematic-card {
+    max-height: 85vh;
+    overflow: hidden;
+    position: relative;
+}
+
+.content-panel {
+    max-height: calc(85vh - 120px);
+    overflow-y: auto;
+    scrollbar-width: thin;
+    scrollbar-color: rgba(255, 255, 255, 0.2) transparent;
+    position: relative;
+}
+
+
+/* Custom Slim Scrollbar */
+.content-panel::-webkit-scrollbar {
+    width: 6px;
+}
+
+.content-panel::-webkit-scrollbar-track {
+    background: rgba(255, 255, 255, 0.05);
+}
+
+.content-panel::-webkit-scrollbar-thumb {
+    background-color: #3b82f6;
+    /* Matches Continue button blue */
+    border-radius: 10px;
+}
+
+.content-panel::-webkit-scrollbar-thumb:hover {
+    background-color: #60a5fa;
+}
+
+/* CLEAR Intro Container */
+.clear-intro {
+    text-align: left;
+}
+
+.clear-intro-title {
+    margin: 0 0 20px 0;
+    color: #FFFFFF;
+    font-weight: 600;
+    font-size: 26px;
+    letter-spacing: -0.01em;
+}
+
+.clear-intro-body p {
+    margin: 0 0 12px 0;
+    color: #DDE1E6;
+    font-size: 16px;
+    line-height: 1.6;
+}
+
+.clear-intro-lead {
+    margin-top: 20px !important;
+    margin-bottom: 16px !important;
+}
+
+.clear-intro-footer {
+    margin-top: 20px !important;
+    padding-top: 16px;
+    border-top: 1px solid rgba(255, 255, 255, 0.08);
+    color: rgba(255, 255, 255, 0.7) !important;
+    font-size: 15px !important;
+}
+
+/* CLEAR Steps List */
+.clear-steps {
+    list-style: none;
+    padding: 0;
+    margin: 0 0 16px 0;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.clear-steps li {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    padding: 10px 14px;
+    background: rgba(50, 74, 107, 0.15);
+    border-radius: 10px;
+    border: 1px solid rgba(100, 150, 200, 0.1);
+}
+
+/* Step label (pill style) */
+.clear-step-label {
+    display: inline-block;
+    background: linear-gradient(145deg, #324a6b, #24344d);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 6px;
+    padding: 4px 10px;
+    font-size: 13px;
+    font-weight: 600;
+    color: #fff;
+    white-space: nowrap;
+    min-width: 70px;
+    text-align: center;
+}
+
+/* Step description */
+.clear-step-desc {
+    color: #DDE1E6;
+    font-size: 15px;
+    line-height: 1.5;
+    padding-top: 2px;
+}
+
+/* =============================================
+   RETRY FOCUS HINT & PROGRESS LINE
+   ============================================= */
+
+/* Retry Focus Hint */
+.retry-focus-hint {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 10px 14px;
+    margin-bottom: 12px;
+    background: rgba(100, 200, 255, 0.08);
+    border-left: 3px solid rgba(100, 200, 255, 0.6);
+    border-radius: 6px;
+    font-size: 14px;
+    color: rgba(255, 255, 255, 0.9);
+    animation: hintFadeIn 0.3s ease-out;
+}
+
+@keyframes hintFadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(-8px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.retry-focus-label {
+    font-weight: 600;
+    color: rgba(100, 200, 255, 0.9);
+}
+
+.retry-focus-dimension {
+    font-weight: 700;
+    color: #fff;
+}
+
+.retry-focus-text {
+    color: rgba(255, 255, 255, 0.75);
+    flex: 1;
+}
+
+.retry-focus-dismiss {
+    background: none;
+    border: none;
+    color: rgba(255, 255, 255, 0.5);
+    cursor: pointer;
+    font-size: 18px;
+    padding: 2px 6px;
+    margin-left: auto;
+    line-height: 1;
+    border-radius: 4px;
+    transition: color 0.2s, background 0.2s;
+}
+
+.retry-focus-dismiss:hover {
+    color: rgba(255, 255, 255, 0.9);
+    background: rgba(255, 255, 255, 0.1);
+}
+
+/* Progress Line */
+.ai-coach-progress-line {
+    padding: 10px 14px;
+    background: rgba(100, 220, 140, 0.1);
+    border-left: 3px solid rgba(100, 220, 140, 0.6);
+    border-radius: 6px;
+    font-size: 14px;
+    color: rgba(255, 255, 255, 0.9);
+}
+
+/* Mobile adjustments for retry hint */
+@media (max-width: 600px) {
+    .retry-focus-hint {
+        flex-wrap: wrap;
+        padding: 8px 12px;
+        position: relative;
+        padding-right: 28px;
+    }
+
+    .retry-focus-dismiss {
+        position: absolute;
+        top: 4px;
+        right: 4px;
+    }
+
+    .retry-focus-text {
+        flex-basis: 100%;
+        margin-top: 4px;
+    }
+}
+
+/* Comprehensive Retry Focus (multiple weak areas) */
+.retry-focus-hint.retry-focus-comprehensive {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 10px;
+    padding: 14px 16px;
+    background: rgba(255, 180, 100, 0.1);
+    border-left: 3px solid rgba(255, 180, 100, 0.6);
+}
+
+.retry-focus-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+.retry-focus-comprehensive .retry-focus-label {
+    color: rgba(255, 200, 140, 0.9);
+    font-weight: 600;
+}
+
+.retry-weak-areas {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    flex: 1;
+}
+
+.retry-weak-area-tag {
+    display: inline-block;
+    background: rgba(255, 100, 100, 0.2);
+    border: 1px solid rgba(255, 100, 100, 0.4);
+    border-radius: 12px;
+    padding: 3px 10px;
+    font-size: 12px;
+    font-weight: 600;
+    color: rgba(255, 180, 180, 0.95);
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+}
+
+.retry-focus-guidance {
+    font-size: 14px;
+    line-height: 1.5;
+    color: rgba(255, 255, 255, 0.85);
+    padding-top: 6px;
+    border-top: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+/* Mobile adjustments for comprehensive hint */
+@media (max-width: 600px) {
+    .retry-focus-hint.retry-focus-comprehensive {
+        padding-right: 16px;
+    }
+
+    .retry-focus-header {
+        padding-right: 24px;
+    }
+
+    .retry-focus-comprehensive .retry-focus-dismiss {
+        top: 10px;
+        right: 10px;
+    }
+}/* =============================================
+   CLEAR COACHING REPORT STYLES
+   ============================================= */
+
+.clear-coaching-report-container {
+    background: rgba(15, 20, 30, 0.4);
+    border-radius: 12px;
+    padding: 20px;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.clear-coaching-title {
+    margin: 0 0 16px 0;
+    font-size: 15px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: rgba(255, 255, 255, 0.7);
+    padding-bottom: 12px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.clear-coaching-list {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+.clear-coaching-line {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    padding-bottom: 16px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.clear-coaching-line:last-child {
+    border-bottom: none;
+    padding-bottom: 0;
+}
+
+.clear-coaching-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.clear-coaching-header .dim-name {
+    font-size: 13px;
+    font-weight: 600;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: rgba(180, 200, 220, 0.9);
+}
+
+.clear-coaching-text {
+    margin: 0;
+    font-size: 15px;
+    line-height: 1.55;
+    color: #cbd5e0;
+}
+
+/* =============================================
+   PRACTICE CUE STYLES
+   ============================================= */
+
+.practice-cue {
+    background: rgba(100, 80, 50, 0.12);
+    border-radius: 10px;
+    padding: 14px 18px;
+    border: 1px solid rgba(200, 150, 50, 0.15);
+    transition: opacity 0.2s ease;
+}
+
+.practice-cue-label {
+    display: block;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: rgba(200, 180, 140, 0.7);
+    margin-bottom: 6px;
+}
+
+.practice-cue-text {
+    margin: 0;
+    font-size: 15px;
+    font-style: italic;
+    line-height: 1.5;
+    color: rgba(240, 230, 210, 0.85);
+}
+
+/* Revise button and helper */
+.revise-btn {
+    text-transform: none;
+}
+
+.revise-helper {
+    font-size: 12px;
+    color: rgba(255, 255, 255, 0.5);
+    font-style: italic;
+    text-align: center;
+    margin-top: -8px;
+    margin-bottom: 8px;
+}
+
+/* Continue Locked Message */
+.continue-locked-message {
+    background: rgba(180, 100, 50, 0.15);
+    border: 1px solid rgba(180, 100, 50, 0.25);
+    border-radius: 8px;
+    padding: 12px 16px;
+    margin-top: 16px;
+    text-align: center;
+    font-size: 14px;
+    color: rgba(255, 200, 150, 0.9);
+    font-style: italic;
+}
+
+/* Revise button highlight when Evaluate is disabled */
+.revise-btn-highlight {
+    background: rgba(100, 150, 200, 0.25) !important;
+    border-color: rgba(100, 150, 200, 0.5) !important;
+    color: #fff !important;
+    animation: pulse-highlight 1.5s ease-in-out infinite;
+}
+
+@keyframes pulse-highlight {
+    0%, 100% { box-shadow: 0 0 0 0 rgba(100, 150, 200, 0.4); }
+    50% { box-shadow: 0 0 0 6px rgba(100, 150, 200, 0); }
+}

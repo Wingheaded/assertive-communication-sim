@@ -1,0 +1,7 @@
+{
+  "name": "branching-video-sim",
+  "version": "1.0.0",
+  "description": "Branching video simulation with AI Coach",
+  "private": true,
+  "type": "module"
+}

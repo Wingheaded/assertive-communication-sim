@@ -1,0 +1,22 @@
+# Vercel
+.vercel
+
+# Environment variables (IMPORTANT: never commit API keys)
+.env
+.env.local
+.env.*.local
+
+# Dependencies
+node_modules/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# IDE
+.idea/
+.vscode/
+*.swp
+
+# Large video files (store separately)
+public/assets/videos/
