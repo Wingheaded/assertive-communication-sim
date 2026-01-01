@@ -20,3 +20,5 @@ Thumbs.db
 
 # Large video files (store separately)
 public/assets/videos/
+public/assets/audio/
+public/assets/pdfs/

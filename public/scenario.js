@@ -1,6 +1,6 @@
 const SCENARIO = {
-    // DEV ONLY: start directly at CLEAR intro for testing
-    initial: 'clear_model_intro',
+    // Start at the beginning of the simulation
+    initial: 'anna_issue',
     states: {
         // CLEAR Model Intro (before AI Coach)
         clear_model_intro: {
@@ -225,17 +225,66 @@ This needs to change."
 You are Anna. Respond to Daniel.`,
             situationText: `Daniel (Customer Support Lead) says: "Anna, I need to be direct. We delayed a customer response by four hours last Friday because of the new approval process. That delay triggered a formal complaint, and my team is taking the heat. I understand why the process exists, but right now it's hurting our responsiveness. This needs to change." You are Anna. Respond to Daniel. Address the incident, balance responsiveness and risk, and align next steps.`,
             prompt: "Respond to Daniel. Address the incident, balance responsiveness and risk, and align next steps.",
-            next: 'end',
+            next: 'scenario3_complete',
             submitLabel: 'EVALUATE',
             continueLabel: 'CONTINUE'
         },
 
-        // End
+        // Scenario 3 Completion Screen (shown after passing S3)
+        scenario3_complete: {
+            id: 'scenario3_complete',
+            type: 'completion',
+            title: 'Scenario 3 Complete',
+            body: `You met the standard for this final scenario.
+You stayed clear under pressure, balanced competing priorities, and aligned next steps without escalation.`,
+            microPrompt: 'What changed in your final response that made it work?',
+            primaryButton: 'CONTINUE',
+            secondaryButton: 'REVIEW COACHING REPORT',
+            next: 'wrap_up',
+            previous: 'activity_daniel'
+        },
+
+        // CLEAR Wrap-Up Screen (final reflection with audio and downloads)
+        wrap_up: {
+            id: 'wrap_up',
+            type: 'wrapup',
+            title: 'The CLEAR Model — In Practice',
+            subheading: "What you just experienced is what assertive communication looks like when it is real.",
+            clearModel: {
+                C: { letter: 'C', name: 'Connect', description: 'Creating psychological safety before content.' },
+                L: { letter: 'L', name: 'Listen', description: 'Making space for what is actually being said.' },
+                E: { letter: 'E', name: 'Express', description: 'Stating your perspective clearly and respectfully.' },
+                A: { letter: 'A', name: 'Align', description: 'Moving toward shared understanding or next steps.' },
+                R: { letter: 'R', name: 'Review', description: 'Checking meaning, impact, and agreement.' }
+            },
+            audio: {
+                title: 'A final reflection',
+                subtitle: 'A short audio summary connecting the CLEAR model to what you just practised.',
+                src: '/assets/audio/AssertiveCommunicationPodcast.mp4'
+            },
+            infographicImage: '/assets/pdfs/CLEAR_Method_Infographic.png',
+            downloads: {
+                label: 'Take this with you',
+                items: [
+                    { text: 'Download CLEAR overview (PDF)', href: '/assets/pdfs/CLEAR_Method_Infographic.pdf' },
+                    { text: 'Download audio transcript (PDF)', href: '/assets/pdfs/The 5-Step CLEAR Assertive Framework.pdf' }
+                ]
+            },
+            primaryButton: 'Finish demo',
+            next: 'end'
+        },
+
+        // End - Final attribution screen
         end: {
             id: 'end',
             type: 'end',
-            text: 'Simulation complete.',
-            button: 'Restart'
+            primaryMessage: "This simple demo shows how learning experiences can be built through vibe coding, without expensive authoring software.",
+            bodyText: `This experience was created using a Google Pro account (€21/month) and the Antigravity tool.
+
+In a production environment, costs naturally increase with API usage, just as they would with any other professional authoring or simulation platform.`,
+            closingLine: "Thanks for exploring this demo.",
+            signature: "José — Learning Solutions",
+            domain: "jose-learning-solutions.com",
         }
     }
 };

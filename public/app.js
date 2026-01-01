@@ -6,7 +6,7 @@ import { SCENARIO_CONFIG, getScenarioConfig, getNextScenarioId, getActivityIdFor
 // Set to true to bypass evaluation gating and enable Continue in all scenarios.
 // Set to false for production behaviour (thresholds enforced).
 // =============================================================================
-const PRACTICE_MODE = true; // <-- Toggle this to enable/disable practice mode
+const PRACTICE_MODE = false; // <-- Production mode: thresholds enforced
 
 // --- Engine State ---
 let currentStateId = null;
@@ -198,6 +198,15 @@ function renderCurrentState() {
             break;
         case 'aiCoach':
             renderAiCoachState(state);
+            break;
+        case 'completion':
+            renderCompletionScreen(state);
+            break;
+        case 'content':
+            renderContentScreen(state);
+            break;
+        case 'wrapup':
+            renderWrapupScreen(state);
             break;
         default:
             console.error(`[Render] Unknown state type: ${state.type}`);
@@ -419,6 +428,61 @@ function renderChoiceState(state) {
     }
 }
 
+// --- Final End State Renderer ---
+function renderEndState(state) {
+    console.log(`[Render] End State: ${state.id}`);
+
+    const stage = ensureStage();
+    stage.innerHTML = '';
+
+    // Overlay backdrop
+    const overlay = document.createElement('div');
+    overlay.id = 'overlay';
+    overlay.className = 'overlay-backdrop end-screen-overlay';
+
+    // Container
+    const container = document.createElement('div');
+    container.className = 'end-screen-container';
+
+    // Primary message (larger text)
+    if (state.primaryMessage) {
+        const primary = document.createElement('p');
+        primary.className = 'end-primary-message';
+        primary.textContent = state.primaryMessage;
+        container.appendChild(primary);
+    }
+
+    // Body text
+    if (state.bodyText) {
+        const body = document.createElement('p');
+        body.className = 'end-body-text';
+        body.innerHTML = state.bodyText.replace(/\n\n/g, '</p><p>');
+        container.appendChild(body);
+    }
+
+    // Closing line
+    if (state.closingLine) {
+        const closing = document.createElement('p');
+        closing.className = 'end-closing-line';
+        closing.textContent = state.closingLine;
+        container.appendChild(closing);
+    }
+
+    // Signature
+    if (state.signature) {
+        const sig = document.createElement('p');
+        sig.className = 'end-signature';
+        sig.innerHTML = state.signature;
+        if (state.domain) {
+            sig.innerHTML += `<br><a href="https://${state.domain}" target="_blank" class="end-domain">${state.domain}</a>`;
+        }
+        container.appendChild(sig);
+    }
+
+    overlay.appendChild(container);
+    stage.appendChild(overlay);
+}
+
 function renderReflectionState(state) {
     console.log(`[Render] Reflection State: ${state.id}`);
 
@@ -512,6 +576,366 @@ function renderReflectionState(state) {
     btnContainer.appendChild(btn);
     card.appendChild(btnContainer);
     overlay.appendChild(card);
+    stage.appendChild(overlay);
+}
+
+// --- Scenario 3 Completion Screen Renderer ---
+function renderCompletionScreen(state) {
+    console.log(`[Render] Completion Screen: ${state.id}`);
+
+    const stage = ensureStage();
+    stage.innerHTML = '';
+
+    // Overlay backdrop
+    const overlay = document.createElement('div');
+    overlay.id = 'overlay';
+    overlay.className = 'overlay-backdrop';
+
+    // Card container (same style as coaching report)
+    const card = document.createElement('div');
+    card.className = 'completion-card ai-coach-container';
+
+    // Title
+    const title = document.createElement('h2');
+    title.className = 'completion-title';
+    title.textContent = state.title || 'Complete';
+    card.appendChild(title);
+
+    // Body text
+    if (state.body) {
+        const body = document.createElement('p');
+        body.className = 'completion-body';
+        body.innerHTML = state.body.replace(/\n/g, '<br>');
+        card.appendChild(body);
+    }
+
+    // Micro-prompt (optional, muted)
+    if (state.microPrompt) {
+        const micro = document.createElement('p');
+        micro.className = 'completion-micro-prompt';
+        micro.textContent = state.microPrompt;
+        card.appendChild(micro);
+    }
+
+    // Buttons
+    const btnContainer = document.createElement('div');
+    btnContainer.className = 'completion-buttons';
+
+    // Secondary button (Review Coaching Report)
+    if (state.secondaryButton && state.previous) {
+        const secondaryBtn = document.createElement('button');
+        secondaryBtn.textContent = state.secondaryButton;
+        secondaryBtn.className = 'secondary-button';
+        secondaryBtn.addEventListener('click', () => {
+            console.log('[Completion] Review clicked - returning to S3 results');
+            go(state.previous);
+        });
+        btnContainer.appendChild(secondaryBtn);
+    }
+
+    // Primary button (Continue)
+    const primaryBtn = document.createElement('button');
+    primaryBtn.textContent = state.primaryButton || 'CONTINUE';
+    primaryBtn.className = 'primary-button';
+    primaryBtn.addEventListener('click', () => {
+        console.log('[Completion] Continue clicked');
+        if (state.next) {
+            go(state.next);
+        }
+    });
+    btnContainer.appendChild(primaryBtn);
+
+    card.appendChild(btnContainer);
+    overlay.appendChild(card);
+    stage.appendChild(overlay);
+}
+
+// --- Content Screen Renderer (wrap-up, etc.) ---
+function renderContentScreen(state) {
+    console.log(`[Render] Content Screen: ${state.id}`);
+
+    const stage = ensureStage();
+    stage.innerHTML = '';
+
+    // Overlay backdrop
+    const overlay = document.createElement('div');
+    overlay.id = 'overlay';
+    overlay.className = 'overlay-backdrop';
+
+    // Card container
+    const card = document.createElement('div');
+    card.className = 'content-card ai-coach-container';
+
+    // Title
+    if (state.title) {
+        const title = document.createElement('h2');
+        title.className = 'content-title';
+        title.textContent = state.title;
+        card.appendChild(title);
+    }
+
+    // Text content
+    if (state.text) {
+        const text = document.createElement('p');
+        text.className = 'content-text';
+        text.innerHTML = state.text.replace(/\n/g, '<br>');
+        card.appendChild(text);
+    }
+
+    // Button
+    const btnContainer = document.createElement('div');
+    btnContainer.className = 'content-buttons';
+
+    const btn = document.createElement('button');
+    btn.textContent = state.button || 'CONTINUE';
+    btn.className = 'primary-button';
+    btn.addEventListener('click', () => {
+        console.log('[Content] Continue clicked');
+        if (state.next) {
+            go(state.next);
+        }
+    });
+    btnContainer.appendChild(btn);
+
+    card.appendChild(btnContainer);
+    overlay.appendChild(card);
+    stage.appendChild(overlay);
+}
+
+// --- CLEAR Wrap-Up Screen Renderer ---
+function renderWrapupScreen(state) {
+    console.log(`[Render] Wrapup Screen: ${state.id}`);
+
+    const stage = ensureStage();
+    stage.innerHTML = '';
+
+    // Overlay backdrop
+    const overlay = document.createElement('div');
+    overlay.id = 'overlay';
+    overlay.className = 'overlay-backdrop wrapup-overlay';
+
+    // Main container
+    const container = document.createElement('div');
+    container.className = 'wrapup-container ai-coach-container';
+
+    // Header
+    const header = document.createElement('div');
+    header.className = 'wrapup-header';
+
+    const title = document.createElement('h2');
+    title.className = 'wrapup-title';
+    title.textContent = state.title || 'The CLEAR Model';
+    header.appendChild(title);
+
+    if (state.subheading) {
+        const sub = document.createElement('p');
+        sub.className = 'wrapup-subheading';
+        sub.textContent = state.subheading;
+        header.appendChild(sub);
+    }
+    container.appendChild(header);
+
+    // CLEAR Infographic - Use image if available, otherwise fall back to HTML blocks
+    if (state.infographicImage) {
+        const infographic = document.createElement('div');
+        infographic.className = 'clear-infographic-image-container';
+
+        const img = document.createElement('img');
+        img.src = state.infographicImage;
+        img.alt = 'CLEAR Model Infographic';
+        img.className = 'clear-infographic-image';
+
+        // Click to zoom functionality
+        img.addEventListener('click', () => {
+            if (img.classList.contains('zoomed')) {
+                // Zoom out
+                img.classList.remove('zoomed');
+                const backdrop = document.querySelector('.zoom-backdrop');
+                if (backdrop) backdrop.remove();
+            } else {
+                // Zoom in
+                const backdrop = document.createElement('div');
+                backdrop.className = 'zoom-backdrop';
+                backdrop.addEventListener('click', () => {
+                    img.classList.remove('zoomed');
+                    backdrop.remove();
+                });
+                document.body.appendChild(backdrop);
+                img.classList.add('zoomed');
+            }
+        });
+
+        infographic.appendChild(img);
+        container.appendChild(infographic);
+    } else if (state.clearModel) {
+        const infographic = document.createElement('div');
+        infographic.className = 'clear-infographic';
+
+        ['C', 'L', 'E', 'A', 'R'].forEach(key => {
+            const item = state.clearModel[key];
+            if (!item) return;
+
+            const block = document.createElement('div');
+            block.className = 'clear-infographic-item';
+
+            block.innerHTML = `
+                <span class="clear-letter">${item.letter}</span>
+                <span class="clear-name">${item.name}</span>
+                <span class="clear-desc">${item.description}</span>
+            `;
+            infographic.appendChild(block);
+        });
+
+        container.appendChild(infographic);
+    }
+
+    // Audio Module
+    if (state.audio) {
+        const audioModule = document.createElement('div');
+        audioModule.className = 'wrapup-audio-module';
+
+        const audioTitle = document.createElement('h3');
+        audioTitle.className = 'audio-module-title';
+        audioTitle.textContent = state.audio.title || 'A final reflection';
+        audioModule.appendChild(audioTitle);
+
+        if (state.audio.subtitle) {
+            const audioSub = document.createElement('p');
+            audioSub.className = 'audio-module-subtitle';
+            audioSub.textContent = state.audio.subtitle;
+            audioModule.appendChild(audioSub);
+        }
+
+        // Audio controls
+        const audioControls = document.createElement('div');
+        audioControls.className = 'audio-controls';
+
+        // Use video element for wave effect visualization
+        const audio = document.createElement('video');
+        audio.src = state.audio.src || '';
+        audio.preload = 'metadata';
+        audio.className = 'audio-wave-video';
+        audioModule.appendChild(audio);
+
+        const playBtn = document.createElement('button');
+        playBtn.className = 'audio-btn audio-play-btn';
+        playBtn.textContent = '▶ Play';
+        playBtn.addEventListener('click', () => {
+            if (audio.paused) {
+                audio.play();
+                playBtn.textContent = '⏸ Pause';
+            } else {
+                audio.pause();
+                playBtn.textContent = '▶ Play';
+            }
+        });
+
+        const replayBtn = document.createElement('button');
+        replayBtn.className = 'audio-btn audio-replay-btn';
+        replayBtn.textContent = '↻ Replay';
+        replayBtn.addEventListener('click', () => {
+            audio.currentTime = 0;
+            audio.play();
+            playBtn.textContent = '⏸ Pause';
+        });
+
+        audio.addEventListener('ended', () => {
+            playBtn.textContent = '▶ Play';
+        });
+
+        audioControls.appendChild(playBtn);
+        audioControls.appendChild(replayBtn);
+        audioModule.appendChild(audioControls);
+
+        // Transcript toggle
+        const transcriptToggle = document.createElement('button');
+        transcriptToggle.className = 'transcript-toggle-btn';
+        transcriptToggle.textContent = 'Show transcript';
+
+        const transcriptPanel = document.createElement('div');
+        transcriptPanel.className = 'transcript-panel';
+        transcriptPanel.style.display = 'none';
+        transcriptPanel.innerHTML = `
+<p>We're doing a deep dive today into a skill that I think sits at the heart of both professional success and, honestly, personal peace. It's assertive communication. I mean, how many times have you been in that situation where you need to set a boundary and it just, it either blows up into a fight or you just say nothing and walk away feeling resentful? It's such a common failure point.</p>
+
+<p>Yeah. And people get it wrong because they think being assertive means being aggressive, but it's not. Right. It's that respectful middle ground. It's about being honest about your own rights and feelings, but, and this is the key, while respecting theirs. And it's a learned skill, right? Nobody's born with this.</p>
+
+<p>Absolutely not. It has to be learned. And we found a great framework for that, a five-part model called CLEAR.</p>
+
+<p>Okay, let's unpack that. CLEAR, starting with C, which is connect. And the source material is really specific here. You have to build some empathy or validation before you even bring up the problem. Which is the total opposite of what we normally do. We just jump right in with the complaint.</p>
+
+<p>But if you start with something like, I know you've been slammed with deadlines this week, you're engaging what they call the helper empathy motivation. Ah, so you're not an adversary. You're framing it as a joint problem to solve. You're asking for their help instead of putting them on the defensive right away. That's a huge mindset shift.</p>
+
+<p>Okay. So from there, we get to L, listen. Active listening. And this is so, so critical now that so many of us are working remotely. Because you lose the body language cues. You lose almost everything. So you have to be deliberate. I mean, actually close your other tabs. Look at the camera, not just the screen. And give those little verbal confirmations. Things like, I understand, or that makes sense. You have to bridge that digital gap and show them you're really with them.</p>
+
+<p>We've connected. We've listened. Now we're at Express. This feels like the hard part. It's where the rubber meets the road for sure. And the golden rule here is to use specific I statements. It's all about owning your experience. So instead of you always turn this in late, you say, I feel frustrated when the report is late because it holds up my work. It's not an accusation. It's a statement about the impact on you. No use statements, no generalizations.</p>
+
+<p>And what about the nonverbal side? When your voice is shaky, even if your words are good. Well, the old saying is true. If your mouth says one thing, but your body says another, people believe your body. Every time. So firm eye contact, not a death stare, just steady, straight posture, a calm, even tone. It has to be congruent.</p>
+
+<p>Okay. That brings us to A, align. This is about solutions. This is the forward looking part. You've stated the problem. Now you align on the next steps. It's about making a clear, specific, and doable request. And the best way to do that is to give them a choice. Enlist their help. Don't just dictate. Ask something like, how can we work together to make sure this deadline works for both of us? So they co-own the solution. That way, it's not your rule they have to follow. It's our agreement we have to uphold.</p>
+
+<p>Which flows right into the last step, our review, the follow-up. And this is the one most people skip. Review is about consistency. A boundary is useless if you don't enforce it. So if it happens again, you address it again. Calmly, quickly, and by referring back to your agreement, hey, we agreed to try this new approach. Let's get back to that. It teaches people how you expect to be treated.</p>
+
+<p>So the whole CLEAR framework, it's really a roadmap. It takes you out of that passive aggressive cycle and into a more balanced place. A place where you can respect yourself and others.</p>
+
+<p>And, you know, I think it's worth leaving you with this one thought about boundaries. Setting them isn't really about having the courage to say no to things you don't want. It's about having the courage to say yes to yourself. Yes to having more energy. Yes to feeling less resentment. And ultimately, yes to protecting your own peace. That's the real payoff here.</p>
+`;
+
+        transcriptToggle.addEventListener('click', () => {
+            const isVisible = transcriptPanel.style.display !== 'none';
+            transcriptPanel.style.display = isVisible ? 'none' : 'block';
+            transcriptToggle.textContent = isVisible ? 'Show transcript' : 'Hide transcript';
+        });
+
+        audioModule.appendChild(transcriptToggle);
+        audioModule.appendChild(transcriptPanel);
+        container.appendChild(audioModule);
+    }
+
+    // Downloads Section
+    if (state.downloads) {
+        const downloads = document.createElement('div');
+        downloads.className = 'wrapup-downloads';
+
+        const dlLabel = document.createElement('p');
+        dlLabel.className = 'downloads-label';
+        dlLabel.textContent = state.downloads.label || 'Take this with you';
+        downloads.appendChild(dlLabel);
+
+        const dlLinks = document.createElement('div');
+        dlLinks.className = 'downloads-links';
+
+        state.downloads.items.forEach(item => {
+            const link = document.createElement('a');
+            link.href = item.href;
+            link.className = 'download-link';
+            link.textContent = item.text;
+            link.target = '_blank';
+            link.download = '';
+            dlLinks.appendChild(link);
+        });
+
+        downloads.appendChild(dlLinks);
+        container.appendChild(downloads);
+    }
+
+    // Navigation
+    const navContainer = document.createElement('div');
+    navContainer.className = 'wrapup-nav';
+
+    const finishBtn = document.createElement('button');
+    finishBtn.className = 'primary-button';
+    finishBtn.textContent = state.primaryButton || 'Finish demo';
+    finishBtn.addEventListener('click', () => {
+        console.log('[Wrapup] Finish clicked');
+        if (state.next) {
+            go(state.next);
+        }
+    });
+    navContainer.appendChild(finishBtn);
+
+    container.appendChild(navContainer);
+    overlay.appendChild(container);
     stage.appendChild(overlay);
 }
 
@@ -1537,15 +1961,6 @@ function renderFeedback(container, feedback, situationText, scenarioId) {
     if (practiceCueSection) panel.appendChild(practiceCueSection);
 
     container.appendChild(panel);
-}
-
-function renderEndState(state) {
-    console.log(`[Render] End State: ${state.id}`);
-
-    const app = clearApp();
-    const div = document.createElement('div');
-    div.textContent = `END STATE: ${state.id}`;
-    app.appendChild(div);
 }
 
 // --- Boot ---

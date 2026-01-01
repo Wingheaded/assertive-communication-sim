@@ -1227,3 +1227,421 @@ video {
     color: rgba(140, 170, 200, 0.9);
     margin-right: 6px;
 }
+
+/* Scenario 3 Completion Screen */
+.completion-card {
+    text-align: center;
+    max-width: 600px;
+}
+
+.completion-title {
+    font-size: 24px;
+    font-weight: 600;
+    color: #fff;
+    margin: 0 0 24px 0;
+    letter-spacing: 0.02em;
+}
+
+.completion-body {
+    font-size: 16px;
+    line-height: 1.7;
+    color: rgba(220, 230, 240, 0.9);
+    margin: 0 0 20px 0;
+}
+
+.completion-micro-prompt {
+    font-size: 14px;
+    font-style: italic;
+    color: rgba(180, 190, 200, 0.7);
+    margin: 0 0 32px 0;
+}
+
+.completion-buttons {
+    display: flex;
+    gap: 16px;
+    justify-content: center;
+    margin-top: 24px;
+}
+
+/* Content Screen (wrap-up) */
+.content-card {
+    text-align: center;
+    max-width: 600px;
+}
+
+.content-title {
+    font-size: 22px;
+    font-weight: 600;
+    color: #fff;
+    margin: 0 0 20px 0;
+}
+
+.content-text {
+    font-size: 15px;
+    line-height: 1.7;
+    color: rgba(210, 220, 230, 0.85);
+    margin: 0 0 28px 0;
+}
+
+.content-buttons {
+    display: flex;
+    justify-content: center;
+    margin-top: 20px;
+}
+
+/* CLEAR Wrap-Up Screen */
+.wrapup-overlay {
+    overflow-y: auto;
+}
+
+.wrapup-container {
+    max-width: 700px;
+    text-align: center;
+}
+
+.wrapup-header {
+    margin-bottom: 28px;
+}
+
+.wrapup-title {
+    font-size: 26px;
+    font-weight: 600;
+    color: #fff;
+    margin: 0 0 12px 0;
+    letter-spacing: 0.02em;
+}
+
+.wrapup-subheading {
+    font-size: 15px;
+    color: rgba(200, 210, 220, 0.8);
+    margin: 0;
+    line-height: 1.5;
+}
+
+/* CLEAR Infographic */
+.clear-infographic {
+    display: flex;
+    justify-content: center;
+    gap: 12px;
+    margin: 24px 0 32px 0;
+    flex-wrap: wrap;
+}
+
+.clear-infographic-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    width: 120px;
+    padding: 16px 10px;
+    background: rgba(80, 100, 120, 0.15);
+    border-radius: 10px;
+    border: 1px solid rgba(100, 130, 160, 0.2);
+}
+
+.clear-letter {
+    font-size: 28px;
+    font-weight: 700;
+    color: rgba(140, 180, 220, 0.95);
+    margin-bottom: 6px;
+}
+
+.clear-name {
+    font-size: 13px;
+    font-weight: 600;
+    color: rgba(200, 210, 220, 0.9);
+    margin-bottom: 6px;
+}
+
+.clear-desc {
+    font-size: 11px;
+    color: rgba(180, 190, 200, 0.7);
+    line-height: 1.4;
+    text-align: center;
+}
+
+/* Audio Module */
+.wrapup-audio-module {
+    background: rgba(60, 80, 100, 0.12);
+    border: 1px solid rgba(100, 130, 160, 0.2);
+    border-radius: 12px;
+    padding: 20px 24px;
+    margin: 24px 0;
+}
+
+.audio-module-title {
+    font-size: 16px;
+    font-weight: 600;
+    color: rgba(220, 230, 240, 0.9);
+    margin: 0 0 8px 0;
+}
+
+.audio-module-subtitle {
+    font-size: 13px;
+    color: rgba(180, 190, 200, 0.7);
+    margin: 0 0 16px 0;
+}
+
+.audio-controls {
+    display: flex;
+    gap: 12px;
+    justify-content: center;
+    margin-bottom: 16px;
+}
+
+.audio-btn {
+    padding: 10px 20px;
+    border: 1px solid rgba(120, 150, 180, 0.3);
+    background: rgba(80, 110, 140, 0.2);
+    color: rgba(200, 220, 240, 0.9);
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 14px;
+    transition: all 0.2s ease;
+}
+
+.audio-btn:hover {
+    background: rgba(100, 130, 160, 0.3);
+    border-color: rgba(140, 170, 200, 0.4);
+}
+
+.transcript-toggle-btn {
+    background: none;
+    border: none;
+    color: rgba(140, 170, 200, 0.8);
+    font-size: 13px;
+    cursor: pointer;
+    text-decoration: underline;
+    padding: 8px;
+}
+
+.transcript-toggle-btn:hover {
+    color: rgba(180, 200, 220, 0.95);
+}
+
+.transcript-panel {
+    background: rgba(40, 50, 60, 0.4);
+    border-radius: 8px;
+    padding: 16px 20px;
+    margin-top: 12px;
+    text-align: left;
+    max-height: 200px;
+    overflow-y: auto;
+}
+
+.transcript-panel p {
+    font-size: 13px;
+    color: rgba(190, 200, 210, 0.85);
+    line-height: 1.6;
+    margin: 0 0 12px 0;
+}
+
+.transcript-panel p:last-child {
+    margin-bottom: 0;
+}
+
+/* Downloads */
+.wrapup-downloads {
+    margin: 28px 0;
+}
+
+.downloads-label {
+    font-size: 14px;
+    color: rgba(180, 190, 200, 0.7);
+    margin: 0 0 12px 0;
+}
+
+.downloads-links {
+    display: flex;
+    gap: 16px;
+    justify-content: center;
+    flex-wrap: wrap;
+}
+
+.download-link {
+    display: inline-block;
+    padding: 10px 18px;
+    background: rgba(70, 90, 110, 0.2);
+    border: 1px solid rgba(100, 130, 160, 0.25);
+    border-radius: 8px;
+    color: rgba(160, 190, 220, 0.9);
+    text-decoration: none;
+    font-size: 13px;
+    transition: all 0.2s ease;
+}
+
+.download-link:hover {
+    background: rgba(90, 110, 130, 0.3);
+    border-color: rgba(140, 170, 200, 0.4);
+    color: #fff;
+}
+
+/* Navigation */
+.wrapup-nav {
+    margin-top: 32px;
+}
+
+/* CLEAR Infographic Image */
+.clear-infographic-image-container {
+    margin: 24px 0 32px 0;
+    text-align: center;
+}
+
+.clear-infographic-image {
+    max-width: 100%;
+    max-height: 300px;
+    border-radius: 12px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+}
+
+/* Remove double scrollbar on wrapup overlay */
+.wrapup-overlay {
+    overflow-y: auto;
+    scrollbar-width: none; /* Firefox */
+    -ms-overflow-style: none; /* IE/Edge */
+}
+
+.wrapup-overlay::-webkit-scrollbar {
+    display: none; /* Chrome/Safari */
+}
+
+/* Bigger infographic image with click-to-zoom */
+.clear-infographic-image {
+    max-width: 100%;
+    max-height: 450px;
+    border-radius: 12px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+    cursor: zoom-in;
+    transition: transform 0.3s ease;
+}
+
+.clear-infographic-image.zoomed {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%) scale(1);
+    max-width: 90vw;
+    max-height: 90vh;
+    z-index: 1000;
+    cursor: zoom-out;
+    box-shadow: 0 10px 60px rgba(0, 0, 0, 0.7);
+}
+
+.zoom-backdrop {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background: rgba(0, 0, 0, 0.85);
+    z-index: 999;
+}
+
+/* Fix: Lighter zoom backdrop so image is visible */
+.zoom-backdrop {
+    background: rgba(0, 0, 0, 0.5) !important;
+}
+
+/* Ensure zoomed image is bright */
+.clear-infographic-image.zoomed {
+    filter: brightness(1.1);
+}
+
+/* Fix: Very light zoom backdrop for fully readable infographic */
+.zoom-backdrop {
+    background: rgba(20, 25, 30, 0.7) !important;
+}
+
+/* Brighten zoomed image for perfect readability */
+.clear-infographic-image.zoomed {
+    filter: brightness(1.3) !important;
+    background: #fff;
+    padding: 8px;
+    border-radius: 16px;
+}
+
+/* Clean zoom: No effects, just bigger size with original appearance */
+.zoom-backdrop {
+    background: transparent !important;
+}
+
+.clear-infographic-image.zoomed {
+    filter: none !important;
+    background: none !important;
+    padding: 0 !important;
+}
+
+/* Bigger zoomed image - fill more of the screen */
+.clear-infographic-image.zoomed {
+    max-width: 98vw !important;
+    max-height: 98vh !important;
+}
+
+/* Audio wave effect video styling */
+.audio-wave-video {
+    width: 100%;
+    max-height: 150px;
+    border-radius: 10px;
+    margin-bottom: 16px;
+    background: rgba(30, 40, 50, 0.5);
+}
+
+/* Audio wave video - taller to show subtitles */
+.audio-wave-video {
+    max-height: 400px !important;
+    height: 400px !important;
+}
+
+/* Audio wave video - 80% of original (850x400 -> 680x320) */
+.audio-wave-video {
+    width: 680px !important;
+    max-width: 100% !important;
+    height: 320px !important;
+    max-height: 320px !important;
+}
+
+/* Final End Screen - Attribution */
+.end-screen-overlay {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding-bottom: 10vh;
+}
+
+.end-screen-container {
+    max-width: 650px;
+    text-align: center;
+    padding: 60px 40px;
+}
+
+.end-primary-message {
+    font-size: 20px;
+    font-weight: 500;
+    color: rgba(220, 230, 240, 0.95);
+    line-height: 1.6;
+    margin: 0 0 32px 0;
+}
+
+.end-body-text {
+    font-size: 15px;
+    color: rgba(180, 190, 200, 0.8);
+    line-height: 1.7;
+    margin: 0 0 28px 0;
+}
+
+.end-closing-line {
+    font-size: 15px;
+    color: rgba(200, 210, 220, 0.85);
+    margin: 0 0 40px 0;
+}
+
+.end-signature {
+    font-size: 13px;
+    color: rgba(140, 150, 160, 0.7);
+    margin: 0;
+    line-height: 1.8;
+}
+
+.end-domain {
+    font-size: 12px;
+    color: rgba(120, 140, 160, 0.6);
+}
