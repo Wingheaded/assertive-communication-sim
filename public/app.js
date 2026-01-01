@@ -300,13 +300,63 @@ function renderVideoState(state) {
 
     video.controls = true;
 
-    // Attempt auto-play (best effort)
-    const playPromise = video.play();
-    if (playPromise !== undefined) {
-        playPromise.catch(error => {
-            console.log('[Autoplay] Blocked or failed:', error);
-            // Controls are already enabled, so user can press play manually
+    // --- Opening Overlay (first screen only) ---
+    const isOpeningScreen = state.id === 'anna_issue' && !window._openingOverlayDismissed;
+
+    if (isOpeningScreen) {
+        // Pause video initially
+        video.pause();
+
+        // Create opening overlay
+        const openingOverlay = document.createElement('div');
+        openingOverlay.id = 'opening-overlay';
+        openingOverlay.className = 'opening-overlay';
+
+        const openingContent = document.createElement('div');
+        openingContent.className = 'opening-content';
+
+        const openingText = document.createElement('p');
+        openingText.className = 'opening-text';
+        openingText.textContent = "You're about to step into a real workplace conversation.";
+        openingContent.appendChild(openingText);
+
+        const startBtn = document.createElement('button');
+        startBtn.className = 'secondary-button opening-start-btn';
+        startBtn.textContent = 'Start';
+        startBtn.addEventListener('click', () => {
+            // Mark as dismissed
+            window._openingOverlayDismissed = true;
+
+            // Check for reduced motion preference
+            const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+            if (prefersReducedMotion) {
+                // Instant hide
+                openingOverlay.remove();
+                video.play();
+            } else {
+                // Fade out
+                openingOverlay.style.transition = 'opacity 400ms ease';
+                openingOverlay.style.opacity = '0';
+                setTimeout(() => {
+                    openingOverlay.remove();
+                    video.play();
+                }, 400);
+            }
         });
+        openingContent.appendChild(startBtn);
+
+        openingOverlay.appendChild(openingContent);
+        stage.appendChild(openingOverlay);
+    } else {
+        // Normal autoplay for other video states
+        const playPromise = video.play();
+        if (playPromise !== undefined) {
+            playPromise.catch(error => {
+                console.log('[Autoplay] Blocked or failed:', error);
+                // Controls are already enabled, so user can press play manually
+            });
+        }
     }
 
     video.addEventListener('ended', () => {
