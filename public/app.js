@@ -1,6 +1,13 @@
 import { SCENARIO } from './scenario.js';
 import { SCENARIO_CONFIG, getScenarioConfig, getNextScenarioId, getActivityIdForScenario } from './scenario-config.js';
 
+// =============================================================================
+// PRACTICE MODE FLAG
+// Set to true to bypass evaluation gating and enable Continue in all scenarios.
+// Set to false for production behaviour (thresholds enforced).
+// =============================================================================
+const PRACTICE_MODE = true; // <-- Toggle this to enable/disable practice mode
+
 // --- Engine State ---
 let currentStateId = null;
 let previousStateId = null;
@@ -65,6 +72,29 @@ function recordAttempt(scenarioId, overallScore, clearScores, responseText) {
         progress.failedAttempts++;
     }
 }
+
+/**
+ * Check if S3 Guided Reset help should be shown
+ * Only shows after 2+ failed attempts in Scenario 3
+ */
+function shouldShowS3GuidedHelp() {
+    const progress = activityProgress.scenarios.S3;
+    return progress.failedAttempts >= 2 && !progress.scenarioPassed;
+}
+
+/**
+ * S3 Guided Reset Help Content (Structural Check)
+ */
+const S3_GUIDED_HELP = {
+    title: "Before you try again",
+    intro: "This situation isn't about tone. It's about decisions under pressure.",
+    listIntro: "Your response must include all three of these elements:",
+    items: [
+        "Incident ownership — clearly acknowledge the specific delay Daniel described.",
+        "Dual-value recognition — explicitly recognise both customer responsiveness and the reason the process exists.",
+        "Forward rule or trigger — propose a concrete rule, trigger, or decision path that would prevent this situation from happening again."
+    ]
+};
 
 // --- AI Coach Navigation History ---
 // Only these states participate in Back navigation (post-simulation)
@@ -660,11 +690,34 @@ function buildClearCoachingReport(data) {
             label: labels[dim],
             score: score,
             text: fullText,
-            cue: cueMsg || "Keep it up."
+            cue: cueMsg || "Keep it up.",
+            // Example will be added during rendering if showExamples is true
+            example: CLEAR_EXAMPLES[dim] || ''
         };
     });
 
     return report;
+}
+
+/**
+ * CLEAR Dimension Examples (shown after 2nd failed attempt)
+ * Each example illustrates ONE dimension only — not a full response.
+ */
+const CLEAR_EXAMPLES = {
+    connect: '"I see the impact this delay had on your team, and I want to address it directly."',
+    listen: '"The four-hour delay created pressure for your team and led to escalation."',
+    express: '"The approval step exists to manage risk, but it shouldn\'t block time-sensitive responses."',
+    align: '"For urgent cases, we need a fast-track path instead of waiting for standard approval."',
+    review: '"Let\'s test this approach this week and review the impact together."'
+};
+
+/**
+ * Check if CLEAR examples should be shown (after 2+ failed attempts in current scenario)
+ */
+function shouldShowClearExamples(scenarioId) {
+    if (!scenarioId) return false;
+    const progress = activityProgress.scenarios[scenarioId];
+    return progress && progress.failedAttempts >= 2 && !progress.scenarioPassed;
 }
 
 /**
@@ -875,10 +928,10 @@ function renderAiCoachState(state) {
     continueBtn.className = 'primary-button';
     continueBtn.id = 'ai-coach-continue-btn';
 
-    // Check if scenario already passed (sticky pass)
+    // Check if scenario already passed (sticky pass) or practice mode
     const scenarioId = state.scenarioId;
     const scenarioProgress = scenarioId ? activityProgress.scenarios[scenarioId] : null;
-    continueBtn.disabled = !(scenarioProgress && scenarioProgress.scenarioPassed);
+    continueBtn.disabled = PRACTICE_MODE ? false : !(scenarioProgress && scenarioProgress.scenarioPassed);
 
     buttonContainer.appendChild(backBtn);
     buttonContainer.appendChild(evaluateBtn);
@@ -961,8 +1014,8 @@ function renderAiCoachState(state) {
             // Render feedback with progression context
             renderFeedback(feedbackPanel, feedback, state.situationText, scenarioId);
 
-            // Gate Continue button based on sticky pass
-            if (scenarioProgress && scenarioProgress.scenarioPassed) {
+            // Gate Continue button based on sticky pass (or practice mode)
+            if (PRACTICE_MODE || (scenarioProgress && scenarioProgress.scenarioPassed)) {
                 continueBtn.disabled = false;
                 continueBtn.style.display = '';
             } else {
@@ -973,6 +1026,21 @@ function renderAiCoachState(state) {
                     lockedMsg.className = 'continue-locked-message';
                     lockedMsg.textContent = `You need ${config.threshold} points to unlock the next scenario. You scored ${feedback.score_total}.`;
                     feedbackPanel.appendChild(lockedMsg);
+                }
+
+                // S3 Guided Reset: Show help after 2+ failed attempts
+                if (scenarioId === 'S3' && shouldShowS3GuidedHelp()) {
+                    const helpPanel = document.createElement('div');
+                    helpPanel.className = 's3-guided-help';
+                    helpPanel.innerHTML = `
+                        <h4 class="s3-help-title">${S3_GUIDED_HELP.title}</h4>
+                        <p class="s3-help-intro">${S3_GUIDED_HELP.intro}</p>
+                        <p class="s3-help-list-intro">${S3_GUIDED_HELP.listIntro}</p>
+                        <ul class="s3-help-list">
+                            ${S3_GUIDED_HELP.items.map(item => `<li>${item}</li>`).join('')}
+                        </ul>
+                    `;
+                    feedbackPanel.appendChild(helpPanel);
                 }
             }
 
@@ -1042,13 +1110,13 @@ function renderAiCoachState(state) {
         textarea.focus();
     });
 
-    // Continue Button Click — Guarded by scenarioPassed
+    // Continue Button Click — Guarded by scenarioPassed (or PRACTICE_MODE)
     continueBtn.addEventListener('click', () => {
         const scenarioId = state.scenarioId;
         const progress = scenarioId ? activityProgress.scenarios[scenarioId] : null;
 
-        // Guard: only proceed if scenario is passed
-        if (progress && !progress.scenarioPassed) {
+        // Guard: only proceed if scenario is passed (or practice mode is on)
+        if (!PRACTICE_MODE && progress && !progress.scenarioPassed) {
             console.log('[AI Coach] Continue blocked - scenario not passed');
             return;
         }
@@ -1302,6 +1370,9 @@ function renderFeedback(container, feedback, situationText, scenarioId) {
     const reportList = document.createElement('div');
     reportList.className = 'clear-coaching-list';
 
+    // Check if examples should be shown (2+ failed attempts)
+    const showExamples = shouldShowClearExamples(scenarioId);
+
     ['connect', 'listen', 'express', 'align', 'review'].forEach(dim => {
         const item = coachingReport[dim];
         const line = document.createElement('div');
@@ -1321,6 +1392,15 @@ function renderFeedback(container, feedback, situationText, scenarioId) {
 
         line.appendChild(header);
         line.appendChild(text);
+
+        // Add example if applicable (after 2+ failed attempts, for non-perfect dimensions)
+        if (showExamples && item.score < 2 && item.example) {
+            const exampleEl = document.createElement('p');
+            exampleEl.className = 'clear-coaching-example';
+            exampleEl.innerHTML = `<span class="example-label">Example:</span> ${item.example}`;
+            line.appendChild(exampleEl);
+        }
+
         reportList.appendChild(line);
     });
 

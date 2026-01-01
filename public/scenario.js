@@ -170,7 +170,7 @@ const SCENARIO = {
             scenarioId: 'S1',
             title: 'Practice Your Response',
             // Video shown to learner instead of text box
-            videoSrc: '/assets/videos/placeholders/coach_placeholder.mp4',
+            videoSrc: '/assets/videos/placeholders/Scenario01.mp4',
             // Transcript for accessibility (plain text)
             transcriptText: "Anna (your manager) says: \"I wanted to talk about a few issues that have come up recently with our platform. Some things haven't been resolved as quickly as the team expected, and it's starting to affect how people work. I'd like to understand what's going on and how we can handle this better moving forward.\" You are Marcus, an IT professional. Respond assertively to Anna's concern.",
             // Optional: VTT captions file (future-proofing)
@@ -183,31 +183,48 @@ const SCENARIO = {
             continueLabel: 'CONTINUE'
         },
 
-        // AI Coach Activity - Exercise 2 (Maria)
+        // AI Coach Activity - Exercise 2 (Maria → Anna)
+        // Maria is overwhelmed, learner plays Anna responding
         activity_sofia: {
             id: 'activity_sofia',
             type: 'aiCoach',
             scenarioId: 'S2',
             title: 'Practice Your Response',
-            videoSrc: '/assets/videos/placeholders/coach_placeholder.mp4',
-            transcriptText: "Anna (your manager) says: \"I wanted to check in about a few things that have been slipping recently. Some items aren't landing when the team expects, and it's creating confusion and rework. I'd like to understand what's happening and how we can keep things on track going forward.\" You are Maria, a Project Coordinator. Respond assertively to Anna's concern.",
-            situationText: "Anna (your manager) says: \"I wanted to check in about a few things that have been slipping recently. Some items aren't landing when the team expects, and it's creating confusion and rework. I'd like to understand what's happening and how we can keep things on track going forward.\" You are Maria, a Project Coordinator. Respond assertively to Anna's concern.",
-            prompt: "Write Maria's response:",
+            videoSrc: '/assets/videos/placeholders/Scenario02.mp4',
+            transcriptText: `Maria (Project Coordinator) says:
+"Anna, I need to be honest — I'm struggling to keep things under control right now.
+I'm covering several moving parts, and when updates or dependencies come in late, everything backs up on my side.
+At the moment, I'm spending a lot of time chasing information instead of coordinating work, and it's becoming unsustainable.
+I need us to be more aligned, because I can't keep absorbing this level of uncertainty."
+
+You are Anna. Respond assertively to Maria.`,
+            situationText: `Maria (Project Coordinator) says: "Anna, I need to be honest — I'm struggling to keep things under control right now. I'm covering several moving parts, and when updates or dependencies come in late, everything backs up on my side. At the moment, I'm spending a lot of time chasing information instead of coordinating work, and it's becoming unsustainable. I need us to be more aligned, because I can't keep absorbing this level of uncertainty." You are Anna. Respond assertively to Maria. Acknowledge the pressure she's under, clarify responsibility, and realign expectations without taking on work that isn't yours.`,
+            prompt: "Respond assertively to Maria. Acknowledge the pressure she's under, clarify responsibility, and realign expectations without taking on work that isn't yours.",
+            suggestedAnswer: `I hear how much pressure you're under, Maria, and I understand why this feels unsustainable. You're right — when updates come in late, it creates knock-on effects, and that's something I need to be more consistent about. What I can commit to is clearer dependency updates and earlier risk signals, so you're not left chasing information. At the same time, I want to be clear about what I can realistically take ownership of, so we don't create more overload for either of us. Let's agree on a simple update rhythm that works for both sides.`,
             next: 'activity_daniel',
             submitLabel: 'EVALUATE',
             continueLabel: 'CONTINUE'
         },
 
-        // AI Coach Activity - Exercise 3 (Daniel)
+        // AI Coach Activity - Exercise 3 (Daniel → Anna)
+        // Final scenario - Daniel is direct about a process issue, learner plays Anna
+        // Threshold: 90%, NO suggested answer shown
         activity_daniel: {
             id: 'activity_daniel',
             type: 'aiCoach',
             scenarioId: 'S3',
             title: 'Practice Your Response',
-            videoSrc: '/assets/videos/placeholders/coach_placeholder.mp4',
-            transcriptText: "Anna (your manager) says: \"I wanted to talk about a recurring issue the team has raised. Some requests are taking longer than expected to close, and it's starting to impact confidence and workflow. I'd like to understand what's going on and how we can improve the way we manage this moving forward.\" You are Daniel, a Customer Support Lead. Respond assertively to Anna's concern.",
-            situationText: "Anna (your manager) says: \"I wanted to talk about a recurring issue the team has raised. Some requests are taking longer than expected to close, and it's starting to impact confidence and workflow. I'd like to understand what's going on and how we can improve the way we manage this moving forward.\" You are Daniel, a Customer Support Lead. Respond assertively to Anna's concern.",
-            prompt: "Write Daniel's response:",
+            videoSrc: '/assets/videos/placeholders/Scenario03.mp4',
+            transcriptText: `Daniel (Customer Support Lead) says:
+"Anna, I need to be direct.
+We delayed a customer response by four hours last Friday because of the new approval process.
+That delay triggered a formal complaint, and my team is taking the heat.
+I understand why the process exists, but right now it's hurting our responsiveness.
+This needs to change."
+
+You are Anna. Respond to Daniel.`,
+            situationText: `Daniel (Customer Support Lead) says: "Anna, I need to be direct. We delayed a customer response by four hours last Friday because of the new approval process. That delay triggered a formal complaint, and my team is taking the heat. I understand why the process exists, but right now it's hurting our responsiveness. This needs to change." You are Anna. Respond to Daniel. Address the incident, balance responsiveness and risk, and align next steps.`,
+            prompt: "Respond to Daniel. Address the incident, balance responsiveness and risk, and align next steps.",
             next: 'end',
             submitLabel: 'EVALUATE',
             continueLabel: 'CONTINUE'

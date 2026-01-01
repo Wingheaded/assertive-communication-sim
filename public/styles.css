@@ -1159,3 +1159,71 @@ video {
     0%, 100% { box-shadow: 0 0 0 0 rgba(100, 150, 200, 0.4); }
     50% { box-shadow: 0 0 0 6px rgba(100, 150, 200, 0); }
 }
+
+/* S3 Guided Reset Help Panel */
+.s3-guided-help {
+    background: rgba(80, 100, 120, 0.2);
+    border: 1px solid rgba(120, 150, 180, 0.3);
+    border-radius: 10px;
+    padding: 20px 24px;
+    margin-top: 20px;
+}
+
+.s3-help-title {
+    margin: 0 0 12px 0;
+    font-size: 16px;
+    font-weight: 600;
+    color: rgba(180, 200, 220, 0.95);
+    letter-spacing: 0.02em;
+}
+
+.s3-help-intro {
+    margin: 0 0 16px 0;
+    font-size: 14px;
+    font-style: italic;
+    color: rgba(200, 210, 220, 0.8);
+    line-height: 1.5;
+}
+
+.s3-help-list-intro {
+    margin: 0 0 10px 0;
+    font-size: 14px;
+    color: rgba(200, 210, 220, 0.9);
+}
+
+.s3-help-list {
+    margin: 0;
+    padding-left: 20px;
+    list-style: disc;
+}
+
+.s3-help-list li {
+    font-size: 14px;
+    color: rgba(220, 230, 240, 0.85);
+    line-height: 1.6;
+    margin-bottom: 8px;
+}
+
+.s3-help-list li:last-child {
+    margin-bottom: 0;
+}
+
+/* CLEAR Coaching Report - Examples (shown after 2nd failed attempt) */
+.clear-coaching-example {
+    margin: 8px 0 0 0;
+    padding: 10px 14px;
+    background: rgba(100, 140, 180, 0.1);
+    border-left: 3px solid rgba(100, 150, 200, 0.4);
+    border-radius: 0 6px 6px 0;
+    font-size: 13px;
+    font-style: italic;
+    color: rgba(180, 200, 220, 0.85);
+    line-height: 1.5;
+}
+
+.clear-coaching-example .example-label {
+    font-style: normal;
+    font-weight: 500;
+    color: rgba(140, 170, 200, 0.9);
+    margin-right: 6px;
+}
