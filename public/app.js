@@ -8,6 +8,13 @@ import { SCENARIO_CONFIG, getScenarioConfig, getNextScenarioId, getActivityIdFor
 // =============================================================================
 const PRACTICE_MODE = false; // <-- Production mode: thresholds enforced
 
+// =============================================================================
+// TEST MODE FLAG
+// Set to true to enable all Continue buttons for UI testing without API calls.
+// Set to false for production behaviour.
+// =============================================================================
+const TEST_MODE = false; // <-- Flip to false for production
+
 // --- Engine State ---
 let currentStateId = null;
 let previousStateId = null;
@@ -1350,7 +1357,17 @@ function renderAiCoachState(state) {
             track.src = state.captionsSrc;
             track.srclang = 'en';
             track.label = 'English';
+            if (captionsEnabled) {
+                track.default = true;
+            }
             video.appendChild(track);
+
+            // Ensure captions state is applied when video loads
+            video.addEventListener('loadedmetadata', () => {
+                if (video.textTracks && video.textTracks.length > 0) {
+                    video.textTracks[0].mode = captionsEnabled ? 'showing' : 'hidden';
+                }
+            });
         }
 
         // Error handling for missing video
@@ -1359,6 +1376,27 @@ function renderAiCoachState(state) {
         });
 
         videoWrapper.appendChild(video);
+
+        // --- CC Toggle for AI Coach video ---
+        if (state.captionsSrc) {
+            const ccBtn = document.createElement('button');
+            ccBtn.className = 'cc-toggle-btn ai-coach-cc-btn' + (captionsEnabled ? ' cc-active' : '');
+            ccBtn.textContent = 'CC';
+            ccBtn.setAttribute('aria-pressed', String(captionsEnabled));
+            ccBtn.title = 'Captions';
+
+            ccBtn.addEventListener('click', () => {
+                captionsEnabled = !captionsEnabled;
+                ccBtn.classList.toggle('cc-active', captionsEnabled);
+                ccBtn.setAttribute('aria-pressed', String(captionsEnabled));
+                if (video.textTracks && video.textTracks.length > 0) {
+                    video.textTracks[0].mode = captionsEnabled ? 'showing' : 'hidden';
+                }
+            });
+
+            videoWrapper.appendChild(ccBtn);
+        }
+
         scenarioSection.appendChild(videoWrapper);
     } else {
         // Fallback: no video source
@@ -1478,7 +1516,7 @@ function renderAiCoachState(state) {
     // Check if scenario already passed (sticky pass) or practice mode
     const scenarioId = state.scenarioId;
     const scenarioProgress = scenarioId ? activityProgress.scenarios[scenarioId] : null;
-    continueBtn.disabled = PRACTICE_MODE ? false : !(scenarioProgress && scenarioProgress.scenarioPassed);
+    continueBtn.disabled = (PRACTICE_MODE || TEST_MODE) ? false : !(scenarioProgress && scenarioProgress.scenarioPassed);
 
     buttonContainer.appendChild(backBtn);
     buttonContainer.appendChild(evaluateBtn);

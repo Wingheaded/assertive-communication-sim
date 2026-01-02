@@ -1770,3 +1770,23 @@ video {
     border-color: rgba(255, 255, 255, 0.5);
     color: #fff;
 }
+/* AI Coach Video CC Button - positioned inside video wrapper */
+.ai-coach-video-wrapper {
+    position: relative;
+}
+
+.ai-coach-cc-btn {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    z-index: 50;
+    padding: 4px 8px;
+    font-size: 10px;
+}
+
+/* Smaller captions for AI Coach videos */
+.ai-coach-video::cue {
+    font-size: 14px;
+    background: rgba(0, 0, 0, 0.75);
+    color: #fff;
+}

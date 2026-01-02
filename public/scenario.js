@@ -171,6 +171,7 @@ const SCENARIO = {
             title: 'Practice Your Response',
             // Video shown to learner instead of text box
             videoSrc: '/assets/videos/placeholders/Scenario01.mp4',
+            captionsSrc: '/assets/videos/placeholders/scenario01.vtt',
             // Transcript for accessibility (plain text)
             transcriptText: "Anna (your manager) says: \"I wanted to talk about a few issues that have come up recently with our platform. Some things haven't been resolved as quickly as the team expected, and it's starting to affect how people work. I'd like to understand what's going on and how we can handle this better moving forward.\" You are Marcus, an IT professional. Respond assertively to Anna's concern.",
             // Optional: VTT captions file (future-proofing)
@@ -191,6 +192,7 @@ const SCENARIO = {
             scenarioId: 'S2',
             title: 'Practice Your Response',
             videoSrc: '/assets/videos/placeholders/Scenario02.mp4',
+            captionsSrc: '/assets/videos/placeholders/scenario02.vtt',
             transcriptText: `Maria (Project Coordinator) says:
 "Anna, I need to be honest — I'm struggling to keep things under control right now.
 I'm covering several moving parts, and when updates or dependencies come in late, everything backs up on my side.
@@ -215,6 +217,7 @@ You are Anna. Respond assertively to Maria.`,
             scenarioId: 'S3',
             title: 'Practice Your Response',
             videoSrc: '/assets/videos/placeholders/Scenario03.mp4',
+            captionsSrc: '/assets/videos/placeholders/scenario03.vtt',
             transcriptText: `Daniel (Customer Support Lead) says:
 "Anna, I need to be direct.
 We delayed a customer response by four hours last Friday because of the new approval process.
