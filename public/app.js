@@ -1266,10 +1266,13 @@ const CLEAR_EXAMPLES = {
 };
 
 /**
- * Check if CLEAR examples should be shown (after 2+ failed attempts in current scenario)
+ * Check if CLEAR examples should be shown (after 2+ failed attempts in Scenario 3 ONLY)
+ * Scenario 1 & 2: Never show embedded micro-examples in CLEAR Coaching Report.
+ * Scenario 3: Show after 2+ failed attempts.
  */
 function shouldShowClearExamples(scenarioId) {
-    if (!scenarioId) return false;
+    // Only Scenario 3 gets embedded micro-examples
+    if (scenarioId !== 'S3') return false;
     const progress = activityProgress.scenarios[scenarioId];
     return progress && progress.failedAttempts >= 2 && !progress.scenarioPassed;
 }
