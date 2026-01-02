@@ -1028,7 +1028,9 @@ video {
         top: 10px;
         right: 10px;
     }
-}/* =============================================
+}
+
+/* =============================================
    CLEAR COACHING REPORT STYLES
    ============================================= */
 
@@ -1156,8 +1158,15 @@ video {
 }
 
 @keyframes pulse-highlight {
-    0%, 100% { box-shadow: 0 0 0 0 rgba(100, 150, 200, 0.4); }
-    50% { box-shadow: 0 0 0 6px rgba(100, 150, 200, 0); }
+
+    0%,
+    100% {
+        box-shadow: 0 0 0 0 rgba(100, 150, 200, 0.4);
+    }
+
+    50% {
+        box-shadow: 0 0 0 6px rgba(100, 150, 200, 0);
+    }
 }
 
 /* S3 Guided Reset Help Panel */
@@ -1496,12 +1505,15 @@ video {
 /* Remove double scrollbar on wrapup overlay */
 .wrapup-overlay {
     overflow-y: auto;
-    scrollbar-width: none; /* Firefox */
-    -ms-overflow-style: none; /* IE/Edge */
+    scrollbar-width: none;
+    /* Firefox */
+    -ms-overflow-style: none;
+    /* IE/Edge */
 }
 
 .wrapup-overlay::-webkit-scrollbar {
-    display: none; /* Chrome/Safari */
+    display: none;
+    /* Chrome/Safari */
 }
 
 /* Bigger infographic image with click-to-zoom */
@@ -1658,13 +1670,11 @@ video {
     justify-content: center;
     padding-bottom: 10vh;
     z-index: 100;
-    background: linear-gradient(
-        to bottom,
-        rgba(0, 0, 0, 0.3) 0%,
-        rgba(0, 0, 0, 0.5) 40%,
-        rgba(0, 0, 0, 0.5) 60%,
-        rgba(0, 0, 0, 0.3) 100%
-    );
+    background: linear-gradient(to bottom,
+            rgba(0, 0, 0, 0.3) 0%,
+            rgba(0, 0, 0, 0.5) 40%,
+            rgba(0, 0, 0, 0.5) 60%,
+            rgba(0, 0, 0, 0.3) 100%);
 }
 
 .opening-content {
@@ -1723,4 +1733,35 @@ video {
 .opening-text {
     font-size: 20px !important;
     text-shadow: 0 2px 12px rgba(0, 0, 0, 1) !important;
+}
+
+/* CC Toggle Button */
+.cc-toggle-btn {
+    position: absolute;
+    top: 16px;
+    right: 16px;
+    z-index: 50;
+    padding: 6px 12px;
+    font-size: 12px;
+    font-weight: 600;
+    background: rgba(0, 0, 0, 0.4);
+    border: 1px solid rgba(255, 255, 255, 0.25);
+    border-radius: 4px;
+    color: rgba(255, 255, 255, 0.6);
+    cursor: pointer;
+    transition: all 150ms ease;
+}
+
+.cc-toggle-btn:hover,
+.cc-toggle-btn:focus {
+    background: rgba(0, 0, 0, 0.6);
+    border-color: rgba(255, 255, 255, 0.4);
+    color: rgba(255, 255, 255, 0.85);
+    outline: none;
+}
+
+.cc-toggle-btn.cc-active {
+    background: rgba(255, 255, 255, 0.15);
+    border-color: rgba(255, 255, 255, 0.5);
+    color: #fff;
 }

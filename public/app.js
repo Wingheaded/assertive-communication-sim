@@ -12,6 +12,9 @@ const PRACTICE_MODE = false; // <-- Production mode: thresholds enforced
 let currentStateId = null;
 let previousStateId = null;
 
+// --- Captions State ---
+let captionsEnabled = true;
+
 // --- Activity Progression State ---
 // Tracks mastery-gated progress across all scenarios
 let activityProgress = {
@@ -299,6 +302,76 @@ function renderVideoState(state) {
     video = newVideo;
 
     video.controls = true;
+
+    // --- Captions Track ---
+    // Derive .vtt path (lowercase to match file naming)
+    const videoDir = state.video.substring(0, state.video.lastIndexOf('/') + 1);
+    const videoFileName = state.video.substring(state.video.lastIndexOf('/') + 1);
+    const vttFileName = videoFileName.replace(/\.[^.]+$/, '.vtt').toLowerCase();
+    const vttPath = videoDir + vttFileName;
+
+    // Remove old tracks from cloned video
+    while (video.firstChild) {
+        video.removeChild(video.firstChild);
+    }
+
+    // Add caption track
+    const track = document.createElement('track');
+    track.kind = 'captions';
+    track.src = vttPath;
+    track.srclang = 'en';
+    track.label = 'Captions';
+    if (captionsEnabled) {
+        track.default = true;
+    }
+    video.appendChild(track);
+
+    // Set caption mode when video metadata loads
+    video.addEventListener('loadedmetadata', () => {
+        if (video.textTracks && video.textTracks.length > 0) {
+            video.textTracks[0].mode = captionsEnabled ? 'showing' : 'hidden';
+        }
+    });
+
+    // --- CC Toggle ---
+    const existingCC = stage.querySelector('.cc-toggle-btn');
+    if (existingCC) existingCC.remove();
+
+    const ccBtn = document.createElement('button');
+    ccBtn.className = 'cc-toggle-btn' + (captionsEnabled ? ' cc-active' : '');
+    ccBtn.textContent = 'CC';
+    ccBtn.setAttribute('aria-pressed', String(captionsEnabled));
+    ccBtn.title = 'Captions';
+
+    ccBtn.addEventListener('click', () => {
+        captionsEnabled = !captionsEnabled;
+        ccBtn.classList.toggle('cc-active', captionsEnabled);
+        ccBtn.setAttribute('aria-pressed', String(captionsEnabled));
+        if (video.textTracks[0]) {
+            video.textTracks[0].mode = captionsEnabled ? 'showing' : 'hidden';
+        }
+    });
+
+    stage.appendChild(ccBtn);
+
+    // --- DEV: Reset Button (remove before production) ---
+    const existingReset = stage.querySelector('.dev-reset-btn');
+    if (existingReset) existingReset.remove();
+
+    const resetBtn = document.createElement('button');
+    resetBtn.className = 'cc-toggle-btn dev-reset-btn';
+    resetBtn.textContent = 'RESET';
+    resetBtn.style.right = '80px';
+    resetBtn.title = 'Reset all progress (dev only)';
+
+    resetBtn.addEventListener('click', () => {
+        localStorage.removeItem('branchingVideoSim.exploredStyles');
+        window._openingOverlayDismissed = false;
+        alert('Progress reset! Refreshing...');
+        location.reload();
+    });
+
+    stage.appendChild(resetBtn);
 
     // --- Opening Overlay (first screen only) ---
     const isOpeningScreen = state.id === 'anna_issue' && !window._openingOverlayDismissed;
