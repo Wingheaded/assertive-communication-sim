@@ -133,11 +133,12 @@ export default async function handler(req, res) {
         return res.status(405).json({ error: 'Method not allowed' });
     }
 
-    const { scenarioId, situationText, userAnswer } = req.body;
+    const { scenarioId, situationText, learnerAnswer, userAnswer } = req.body;
+    const answer = learnerAnswer || userAnswer; // Accept both field names
 
     // Validate input
-    if (!scenarioId || !situationText || !userAnswer) {
-        return res.status(400).json({ error: 'Missing required fields: scenarioId, situationText, userAnswer' });
+    if (!scenarioId || !situationText || !answer) {
+        return res.status(400).json({ error: 'Missing required fields: scenarioId, situationText, learnerAnswer' });
     }
 
     // Load Knowledge Base
@@ -222,7 +223,7 @@ EVALUATE THE FOLLOWING:`;
 
     const userPrompt = `Scenario: ${situationText}
 
-Learner's Response: "${userAnswer}"
+Learner's Response: "${answer}"
 
 Provide your evaluation as strict JSON only.`;
 

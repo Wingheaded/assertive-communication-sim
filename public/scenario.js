@@ -6,6 +6,7 @@ const SCENARIO = {
         clear_model_intro: {
             id: 'clear_model_intro',
             type: 'reflection',
+            back: 'hub',
             prompt: `<div class="clear-intro">
     <h2 class="clear-intro-title">How Assertive Communication Works</h2>
     <div class="clear-intro-body">

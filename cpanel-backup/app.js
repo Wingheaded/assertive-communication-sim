@@ -153,82 +153,6 @@ function canGoBackAiCoach() {
     return aiCoachHistory.length > 0;
 }
 
-// --- Infographic Modal ---
-function openInfographicModal() {
-    // Create modal backdrop
-    const backdrop = document.createElement('div');
-    backdrop.className = 'infographic-modal-backdrop';
-    backdrop.setAttribute('role', 'dialog');
-    backdrop.setAttribute('aria-modal', 'true');
-    backdrop.setAttribute('aria-label', 'Review the choices infographic');
-
-    // Create modal container
-    const modal = document.createElement('div');
-    modal.className = 'infographic-modal';
-
-    // Close button
-    const closeBtn = document.createElement('button');
-    closeBtn.className = 'infographic-modal-close';
-    closeBtn.innerHTML = '×';
-    closeBtn.setAttribute('aria-label', 'Close modal');
-
-    // Image
-    const img = document.createElement('img');
-    img.src = '/assets/pdfs/BranchesInfographicDark.png';
-    img.alt = 'Branches Infographic - Passive, Aggressive, and Assertive communication styles';
-
-    // Download button
-    const downloadBtn = document.createElement('a');
-    downloadBtn.href = '/assets/pdfs/BranchesInfographicDark.pdf';
-    downloadBtn.download = 'BranchesInfographic.pdf';
-    downloadBtn.className = 'infographic-modal-download';
-    downloadBtn.textContent = 'Download Infographic';
-
-    // Assemble modal
-    modal.appendChild(closeBtn);
-    modal.appendChild(img);
-    modal.appendChild(downloadBtn);
-    backdrop.appendChild(modal);
-    document.body.appendChild(backdrop);
-
-    // Prevent body scroll
-    document.body.style.overflow = 'hidden';
-
-    // Store the trigger button to restore focus later
-    const triggerButton = document.activeElement;
-
-    // Close function
-    const closeModal = () => {
-        backdrop.remove();
-        document.body.style.overflow = '';
-        if (triggerButton && triggerButton.focus) {
-            triggerButton.focus();
-        }
-    };
-
-    // Close on X button click
-    closeBtn.addEventListener('click', closeModal);
-
-    // Close on backdrop click (outside modal)
-    backdrop.addEventListener('click', (e) => {
-        if (e.target === backdrop) {
-            closeModal();
-        }
-    });
-
-    // Close on ESC key
-    const handleKeyDown = (e) => {
-        if (e.key === 'Escape') {
-            closeModal();
-            document.removeEventListener('keydown', handleKeyDown);
-        }
-    };
-    document.addEventListener('keydown', handleKeyDown);
-
-    // Focus the close button for accessibility
-    closeBtn.focus();
-}
-
 // --- State Management ---
 function getState(id) {
     const state = SCENARIO.states[id];
@@ -751,34 +675,17 @@ function renderReflectionState(state) {
     const btnContainer = document.createElement('div');
     btnContainer.className = 'ui-button-container';
 
-    // Add Review/Back button for AI Coach states
+    // Add Back button for AI Coach states
     if (isAiCoachState(state.id)) {
         const backBtn = document.createElement('button');
-
-        // Special case: clear_model_intro shows "Review the choices" and opens infographic
-        if (state.id === 'clear_model_intro') {
-            backBtn.textContent = 'Review the choices';
-            backBtn.className = 'secondary-button ai-coach-back-btn';
-            backBtn.disabled = false;
-            backBtn.addEventListener('click', () => {
-                console.log('[Reflection] Review the choices clicked');
-                openInfographicModal();
-            });
-        } else {
-            // Other AI Coach states: normal back behavior
-            backBtn.textContent = 'BACK';
-            backBtn.className = 'secondary-button ai-coach-back-btn';
-            backBtn.disabled = !canGoBackAiCoach() && !state.back;
-            backBtn.addEventListener('click', () => {
-                console.log('[Reflection] Back clicked');
-                overlay.remove();
-                if (canGoBackAiCoach()) {
-                    goBackAiCoach();
-                } else if (state.back) {
-                    go(state.back);
-                }
-            });
-        }
+        backBtn.textContent = 'BACK';
+        backBtn.className = 'secondary-button ai-coach-back-btn';
+        backBtn.disabled = !canGoBackAiCoach();
+        backBtn.addEventListener('click', () => {
+            console.log('[Reflection] Back clicked');
+            overlay.remove();
+            goBackAiCoach();
+        });
         btnContainer.appendChild(backBtn);
     }
 
