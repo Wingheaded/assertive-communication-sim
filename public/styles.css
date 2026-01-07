@@ -1,6 +1,37 @@
 /* Fonts */
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap');
 
+/* =============================================
+   CSS CUSTOM PROPERTIES (Design Tokens)
+   ============================================= */
+:root {
+    /* Typography - Desktop */
+    --font-size-h2: 30px;
+    --font-size-body: 18px;
+    --font-size-small: 15px;
+    --font-size-button: 15px;
+
+    /* Spacing */
+    --spacing-sm: 8px;
+    --spacing-md: 16px;
+    --spacing-lg: 24px;
+
+    /* Colors */
+    --color-text-primary: #fff;
+    --color-text-secondary: rgba(200, 210, 220, 0.85);
+    --color-bg-overlay: rgba(15, 20, 30, 0.75);
+}
+
+/* Mobile typography overrides */
+@media (max-width: 599px) {
+    :root {
+        --font-size-h2: 20px;
+        --font-size-body: 15px;
+        --font-size-small: 13px;
+        --font-size-button: 14px;
+    }
+}
+
 /* Basic layout scaffolding */
 body,
 html {
@@ -1593,27 +1624,15 @@ video {
     max-height: 98vh !important;
 }
 
-/* Audio wave effect video styling */
+/* Audio wave effect video styling (consolidated) */
 .audio-wave-video {
-    width: 100%;
-    max-height: 150px;
+    width: 680px;
+    max-width: 100%;
+    height: 320px;
+    max-height: 320px;
     border-radius: 10px;
     margin-bottom: 16px;
     background: rgba(30, 40, 50, 0.5);
-}
-
-/* Audio wave video - taller to show subtitles */
-.audio-wave-video {
-    max-height: 400px !important;
-    height: 400px !important;
-}
-
-/* Audio wave video - 80% of original (850x400 -> 680x320) */
-.audio-wave-video {
-    width: 680px !important;
-    max-width: 100% !important;
-    height: 320px !important;
-    max-height: 320px !important;
 }
 
 /* Final End Screen - Attribution */
