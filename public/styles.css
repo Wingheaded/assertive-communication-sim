@@ -1883,7 +1883,6 @@ video {
     filter: brightness(1.1);
 }
 
-/* Mobile responsive */
 @media (max-width: 600px) {
     .infographic-modal {
         max-width: 95vw;
@@ -1900,5 +1899,437 @@ video {
     .infographic-modal-download {
         padding: 10px 20px;
         font-size: 13px;
+    }
+}
+
+/* =============================================
+   COMPREHENSIVE MOBILE RESPONSIVE DESIGN
+   ============================================= */
+
+/* === MOBILE PORTRAIT (< 600px) === */
+@media (max-width: 599px) {
+
+    /* --- App Container --- */
+    #app {
+        padding: 12px;
+        min-height: 100vh;
+        min-height: 100dvh;
+        /* Dynamic viewport height for mobile browsers */
+    }
+
+    /* --- Stage Container: Remove aspect-ratio constraint --- */
+    .stage {
+        aspect-ratio: unset;
+        height: auto;
+        min-height: 450px;
+        overflow: visible;
+        border-radius: 16px;
+        box-shadow: 0 20px 40px rgba(0, 0, 0, 0.5);
+    }
+
+    /* --- Video: Maintain aspect ratio when stage is flexible --- */
+    .stage video,
+    .stage #video-player {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        min-height: 200px;
+        object-fit: cover;
+    }
+
+    /* --- Overlay: Position relative for content flow --- */
+    .overlay-backdrop {
+        position: relative;
+        min-height: 400px;
+        padding: 16px;
+        border-radius: 16px;
+    }
+
+    /* --- Cinematic Card: Full width, proper sizing --- */
+    .cinematic-card {
+        width: 100%;
+        max-width: 100%;
+        padding: 8px;
+        gap: 16px;
+    }
+
+    /* --- Content Panel: Compact padding --- */
+    .content-panel {
+        width: 100%;
+        max-width: 100%;
+        padding: 20px 16px;
+        box-sizing: border-box;
+    }
+
+    /* --- Typography: Mobile scale --- */
+    .content-panel h2 {
+        font-size: 20px;
+        line-height: 1.3;
+        margin-bottom: 16px;
+    }
+
+    .content-panel p {
+        font-size: 15px;
+        line-height: 1.5;
+        margin-bottom: 12px;
+    }
+
+    /* --- Buttons: Mobile-friendly sizing --- */
+    .primary-button {
+        font-size: 14px;
+        padding: 12px 20px;
+        min-width: 120px;
+    }
+
+    .secondary-button {
+        font-size: 13px;
+        padding: 10px 16px;
+    }
+
+    .ui-button-container {
+        gap: 12px;
+        flex-direction: column;
+        width: 100%;
+    }
+
+    .ui-button-container .primary-button {
+        width: 100%;
+    }
+
+    /* --- CC and Reset buttons: Smaller on mobile --- */
+    .cc-toggle-btn {
+        padding: 6px 10px;
+        font-size: 11px;
+        top: 8px;
+        right: 8px;
+    }
+
+    .dev-reset-btn {
+        right: 50px !important;
+    }
+
+    /* --- CLEAR Intro: Compact layout --- */
+    .clear-intro {
+        padding: 16px;
+    }
+
+    .clear-intro-title {
+        font-size: 20px;
+        margin-bottom: 16px;
+    }
+
+    .clear-intro-body {
+        font-size: 14px;
+    }
+
+    .clear-intro-body p {
+        margin-bottom: 12px;
+    }
+
+    .clear-steps {
+        gap: 12px;
+        margin: 16px 0;
+    }
+
+    .clear-steps li {
+        padding: 12px;
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 6px;
+    }
+
+    .clear-step-label {
+        font-size: 14px;
+    }
+
+    .clear-step-desc {
+        font-size: 13px;
+    }
+
+    /* --- AI Coach: Mobile layout --- */
+    .ai-coach-container {
+        padding: 16px;
+        max-width: 100%;
+        max-height: 85vh;
+        overflow-y: auto;
+        -webkit-overflow-scrolling: touch;
+    }
+
+    .ai-coach-video-wrapper {
+        position: relative;
+        border-radius: 8px;
+        overflow: hidden;
+        min-height: 180px;
+        /* Ensure video is visible */
+    }
+
+    .ai-coach-video {
+        width: 100%;
+        height: auto;
+        min-height: 180px;
+        object-fit: contain;
+        display: block;
+    }
+
+    .ai-coach-transcript {
+        max-height: 200px;
+        overflow-y: auto;
+        font-size: 14px;
+        padding: 12px;
+    }
+
+    .ai-coach-textarea {
+        min-height: 100px;
+        font-size: 15px;
+    }
+
+    .ai-coach-score-circle {
+        width: 52px;
+        height: 52px;
+        font-size: 18px;
+    }
+
+    .ai-coach-buttons {
+        flex-direction: row;
+        gap: 12px;
+    }
+
+    .ai-coach-buttons .primary-button,
+    .ai-coach-buttons .secondary-button {
+        flex: 1;
+        min-width: 100px;
+    }
+
+    /* AI Coach Feedback section - scrollable */
+    .ai-coach-feedback {
+        max-height: none;
+        overflow-y: visible;
+    }
+
+    /* --- Opening Overlay: Compact --- */
+    .opening-overlay .opening-content {
+        padding: 24px 16px;
+    }
+
+    .opening-text {
+        font-size: 18px;
+    }
+
+    /* --- Wrapup/Final Reflection Screen: Mobile --- */
+    .wrapup-overlay {
+        overflow-y: auto;
+        -webkit-overflow-scrolling: touch;
+    }
+
+    .wrapup-container {
+        max-width: 100%;
+        padding: 16px;
+    }
+
+    .wrapup-title {
+        font-size: 20px;
+        margin-bottom: 8px;
+    }
+
+    .wrapup-subheading {
+        font-size: 14px;
+    }
+
+    /* Audio wave video - fit mobile screen */
+    .audio-wave-video {
+        width: 100% !important;
+        max-width: 100% !important;
+        height: auto !important;
+        max-height: 180px !important;
+        min-height: 120px;
+    }
+
+    .wrapup-audio-module {
+        padding: 16px;
+        margin: 16px 0;
+    }
+
+    .audio-module-title {
+        font-size: 15px;
+    }
+
+    .audio-module-subtitle {
+        font-size: 12px;
+    }
+
+    /* Ensure audio controls (Play/Replay buttons) are visible */
+    .audio-controls {
+        display: flex !important;
+        flex-wrap: wrap;
+        justify-content: center;
+        gap: 10px;
+        margin-top: 12px;
+        margin-bottom: 12px;
+    }
+
+    .audio-btn {
+        padding: 10px 16px;
+        font-size: 14px;
+        min-width: 100px;
+    }
+
+    /* CLEAR infographic image - smaller on mobile */
+    .clear-infographic-image {
+        max-height: 200px;
+    }
+
+    .clear-infographic-image-container {
+        margin: 16px 0;
+    }
+
+    /* CLEAR text items - scroll horizontally or stack */
+    .clear-infographic {
+        gap: 8px;
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+        padding-bottom: 8px;
+    }
+
+    .clear-infographic-item {
+        width: 90px;
+        min-width: 90px;
+        padding: 12px 8px;
+    }
+
+    .clear-letter {
+        font-size: 22px;
+    }
+
+    .clear-name {
+        font-size: 11px;
+    }
+
+    .clear-desc {
+        font-size: 10px;
+    }
+
+    /* Transcript toggle and panel */
+    .transcript-toggle-btn {
+        font-size: 12px;
+    }
+
+    .transcript-panel {
+        max-height: 150px;
+        padding: 12px;
+    }
+
+    .transcript-panel p {
+        font-size: 12px;
+    }
+}
+
+/* === MOBILE LANDSCAPE (limited height) === */
+@media (max-height: 500px) and (orientation: landscape) {
+
+    #app {
+        padding: 8px;
+    }
+
+    .stage {
+        aspect-ratio: unset;
+        height: auto;
+        min-height: 100%;
+        overflow: visible;
+    }
+
+    .overlay-backdrop {
+        position: relative;
+        min-height: auto;
+        padding: 12px;
+    }
+
+    .content-panel {
+        padding: 12px;
+    }
+
+    .content-panel h2 {
+        font-size: 18px;
+        margin-bottom: 10px;
+    }
+
+    .content-panel p {
+        font-size: 14px;
+        margin-bottom: 8px;
+    }
+
+    .primary-button {
+        padding: 10px 16px;
+        font-size: 13px;
+    }
+
+    .ui-button-container {
+        gap: 8px;
+    }
+
+    /* Horizontal button layout in landscape */
+    .ui-button-container {
+        flex-direction: row;
+        flex-wrap: wrap;
+        justify-content: center;
+    }
+
+    .ui-button-container .primary-button {
+        width: auto;
+        flex: 1;
+        min-width: 150px;
+        max-width: 300px;
+    }
+}
+
+/* === TABLET (600px - 1024px) === */
+@media (min-width: 600px) and (max-width: 1024px) {
+
+    #app {
+        padding: 20px;
+    }
+
+    .stage {
+        border-radius: 20px;
+    }
+
+    .content-panel h2 {
+        font-size: 26px;
+    }
+
+    .content-panel p {
+        font-size: 17px;
+    }
+
+    .cinematic-card {
+        max-width: 90%;
+    }
+}
+
+/* === VERY SMALL SCREENS (< 360px) === */
+@media (max-width: 359px) {
+
+    .content-panel h2 {
+        font-size: 18px;
+    }
+
+    .content-panel p {
+        font-size: 14px;
+    }
+
+    .primary-button {
+        font-size: 13px;
+        padding: 10px 16px;
+    }
+
+    .clear-steps li {
+        padding: 10px;
+    }
+
+    .ai-coach-score-circle {
+        width: 44px;
+        height: 44px;
+        font-size: 16px;
     }
 }
