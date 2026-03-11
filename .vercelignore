@@ -1,0 +1,8 @@
+# Large files that exceed Vercel's 100MB limit
+scripts.zip
+
+# Development files
+node_modules
+.env
+.env.local
+*.log

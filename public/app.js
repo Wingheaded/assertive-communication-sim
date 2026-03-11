@@ -1329,9 +1329,7 @@ function buildClearCoachingReport(data) {
         let fullText = `${statusMsg} ${contextMsg}.`;
         if (cueMsg) fullText += ` ${cueMsg}`;
 
-        if (fullText.length > 280) {
-            fullText = fullText.substring(0, 277) + '...';
-        }
+        // No truncation - allow full text for all CLEAR feedback
 
         report[dim] = {
             label: labels[dim],
@@ -1726,6 +1724,11 @@ function renderAiCoachState(state) {
             }
 
         } catch (error) {
+            // Step 6: Retry & Error UX - Failed calls do NOT:
+            // - Increment attemptNumber (recordAttempt not called)
+            // - Modify scores (no scoring happens)
+            // - Trigger stuck detection (only successful evals do)
+            // Learner's pre-call state is fully preserved.
             console.error('[AI Coach] Evaluation error:', error);
             feedbackPanel.innerHTML = `<div class="ai-coach-error">
                 <p>Unable to evaluate your response. Please try again.</p>

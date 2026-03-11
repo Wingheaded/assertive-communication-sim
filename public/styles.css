@@ -673,10 +673,19 @@ video {
     color: #DDE1E6;
     font-size: 15px;
     line-height: 1.6;
+    /* Anti-truncation: ensure full text visibility */
+    white-space: normal;
+    overflow: visible;
+    max-height: none;
 }
 
 .ai-coach-section li {
     margin-bottom: 6px;
+    /* Anti-truncation: ensure full text visibility */
+    white-space: normal;
+    overflow: visible;
+    text-overflow: clip;
+    overflow-wrap: anywhere;
 }
 
 .ai-coach-section p {
@@ -684,6 +693,12 @@ video {
     color: #DDE1E6;
     font-size: 15px;
     line-height: 1.6;
+    /* Anti-truncation: ensure full text visibility */
+    white-space: normal;
+    overflow: visible;
+    text-overflow: clip;
+    overflow-wrap: anywhere;
+    max-height: none;
 }
 
 /* Rewrite box */
@@ -1126,6 +1141,12 @@ video {
     font-size: 15px;
     line-height: 1.55;
     color: #cbd5e0;
+    /* Anti-truncation: ensure full text visibility */
+    white-space: normal;
+    overflow: visible;
+    text-overflow: clip;
+    overflow-wrap: anywhere;
+    max-height: none;
 }
 
 /* =============================================

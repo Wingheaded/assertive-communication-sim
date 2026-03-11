@@ -6,7 +6,7 @@
   "type": "module",
   "scripts": {
     "start": "node server.js",
-    "dev": "vercel dev",
+    "dev": "firebase emulators:start",
     "build:css": "cleancss -o public/styles.min.css public/styles.css",
     "build": "npm run build:css"
   },

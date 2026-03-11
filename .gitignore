@@ -18,3 +18,4 @@ Thumbs.db
 .vscode/
 *.swp
 scripts.zip
+.env*.local
