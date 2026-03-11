@@ -1,11 +1,31 @@
 import fs from 'fs';
 import path from 'path';
 
+const DEFAULT_GEMINI_MODEL = process.env.GEMINI_MODEL || 'gemini-2.5-flash';
+const CLEAR_DIMENSIONS = ['connect', 'listen', 'express', 'align', 'review'];
+const CLEAR_LABELS = {
+    connect: 'Connect',
+    listen: 'Listen',
+    express: 'Express',
+    align: 'Align',
+    review: 'Review'
+};
+const SCENARIO_THRESHOLDS = {
+    S1: 75,
+    S2: 85,
+    S3: 90
+};
+
 // --- STRICT JSON SCHEMA ---
 // This schema is enforced server-side. LLM must output exactly this structure.
 const EXPECTED_SCHEMA = {
     style: "string", // passive|aggressive|assertive|mixed (internal use only, NOT shown to UI)
+    mode_applied: "string", // calibration|practice
+    coaching_state: "string", // calibration|practice_progressing|practice_stalled|practice_regressed|practice_passed
     score_total: "number", // 0-100
+    progress_status: "string", // first_attempt|improved|unchanged|regressed
+    progress_reason: "string",
+    attempt_summary: "string",
     clear_scores: {
         connect: "number", // 0-2
         listen: "number",  // 0-2
@@ -16,69 +36,245 @@ const EXPECTED_SCHEMA = {
     strengths: "array", // 1-3 items
     one_improvement: "string", // exactly 1
     risks: "array", // 0+ items
+    primary_focus: {
+        clear_dimension: "string",
+        label: "string",
+        reason: "string"
+    },
+    revision_target: "string",
+    revision_checklist: "array", // 2-3 items
+    clear_feedback: {
+        connect: { score: "number", status: "string", what_worked: "string", what_to_fix: "string", priority: "string" },
+        listen: { score: "number", status: "string", what_worked: "string", what_to_fix: "string", priority: "string" },
+        express: { score: "number", status: "string", what_worked: "string", what_to_fix: "string", priority: "string" },
+        align: { score: "number", status: "string", what_worked: "string", what_to_fix: "string", priority: "string" },
+        review: { score: "number", status: "string", what_worked: "string", what_to_fix: "string", priority: "string" }
+    },
+    support_level: "string", // normal|narrowed|scaffolded
+    scaffold: {
+        title: "string",
+        items: "array",
+        note: "string"
+    },
     rewrite: {
         best_practice_version: "string", // 1-3 sentences
         why_this_is_better: "array" // 1-3 bullets
     },
-    one_coaching_question: "string"
+    one_coaching_question: "string",
+    pass_rationale: "string"
 };
 
 // --- VALIDATION FUNCTIONS ---
-function validateAndClampResponse(data) {
+function clampNumber(value, min, max) {
+    return Math.max(min, Math.min(max, Number(value) || 0));
+}
+
+function sanitizeString(value, fallback = '') {
+    return typeof value === 'string' ? value.trim() : fallback;
+}
+
+function sanitizeStringArray(value, maxItems = 3) {
+    if (!Array.isArray(value)) return [];
+    return value
+        .map(item => sanitizeString(item))
+        .filter(Boolean)
+        .slice(0, maxItems);
+}
+
+function buildDefaultClearScores() {
+    return {
+        connect: 0,
+        listen: 0,
+        express: 0,
+        align: 0,
+        review: 0
+    };
+}
+
+function buildDefaultClearFeedback() {
+    return CLEAR_DIMENSIONS.reduce((acc, dim) => {
+        acc[dim] = {
+            score: 0,
+            status: 'missing',
+            what_worked: '',
+            what_to_fix: '',
+            priority: 'secondary'
+        };
+        return acc;
+    }, {});
+}
+
+function inferProgressStatus(previousEvaluation, scoreTotal) {
+    if (!previousEvaluation || typeof previousEvaluation.score_total !== 'number') {
+        return 'first_attempt';
+    }
+    if (scoreTotal > previousEvaluation.score_total) return 'improved';
+    if (scoreTotal < previousEvaluation.score_total) return 'regressed';
+    return 'unchanged';
+}
+
+function inferCoachingState(mode, progressStatus, scoreTotal, threshold) {
+    if (mode === 'calibration') return 'calibration';
+    if (scoreTotal >= threshold) return 'practice_passed';
+    if (progressStatus === 'regressed') return 'practice_regressed';
+    if (progressStatus === 'unchanged') return 'practice_stalled';
+    return 'practice_progressing';
+}
+
+function inferSupportLevel(mode, scenarioId, attemptNumber, progressStatus, scoreTotal, threshold) {
+    if (mode === 'calibration' || scoreTotal >= threshold) {
+        return 'normal';
+    }
+
+    if (attemptNumber >= 3 && progressStatus !== 'improved') {
+        return scenarioId === 'S2' ? 'scaffolded' : 'narrowed';
+    }
+
+    if (attemptNumber >= 2 && progressStatus !== 'improved') {
+        return 'narrowed';
+    }
+
+    return 'normal';
+}
+
+function normalizeClearFeedback(clearFeedback, clearScores, primaryDimension) {
+    const normalized = buildDefaultClearFeedback();
+
+    CLEAR_DIMENSIONS.forEach(dim => {
+        const source = clearFeedback && typeof clearFeedback === 'object' ? clearFeedback[dim] : null;
+        const score = clampNumber(source?.score ?? clearScores[dim], 0, 2);
+
+        normalized[dim] = {
+            score,
+            status: sanitizeString(source?.status, score === 2 ? 'strong' : score === 1 ? 'partial' : 'missing'),
+            what_worked: sanitizeString(source?.what_worked, score > 0 ? `${CLEAR_LABELS[dim]} is present in parts of the response.` : ''),
+            what_to_fix: sanitizeString(source?.what_to_fix, score === 2 ? '' : `Strengthen ${CLEAR_LABELS[dim]} on the next attempt.`),
+            priority: dim === primaryDimension ? 'primary' : sanitizeString(source?.priority, 'secondary')
+        };
+    });
+
+    return normalized;
+}
+
+function validateAndClampResponse(data, context = {}) {
     const errors = [];
+    const threshold = SCENARIO_THRESHOLDS[context.scenarioId] || 75;
+
+    if (typeof data !== 'object' || !data) {
+        data = {};
+    }
 
     // Validate score_total (0-100)
-    if (typeof data.score_total !== 'number' || data.score_total < 0 || data.score_total > 100) {
-        data.score_total = Math.max(0, Math.min(100, Number(data.score_total) || 0));
-    }
+    data.score_total = clampNumber(data.score_total, 0, 100);
 
     // Validate clear_scores (0-2 each)
-    if (data.clear_scores && typeof data.clear_scores === 'object') {
-        for (const key of ['connect', 'listen', 'express', 'align', 'review']) {
-            if (typeof data.clear_scores[key] !== 'number' || data.clear_scores[key] < 0 || data.clear_scores[key] > 2) {
-                data.clear_scores[key] = Math.max(0, Math.min(2, Number(data.clear_scores[key]) || 0));
-            }
-        }
-    } else {
+    const clearScores = buildDefaultClearScores();
+    if (!data.clear_scores || typeof data.clear_scores !== 'object') {
         errors.push('clear_scores must be an object');
     }
+    CLEAR_DIMENSIONS.forEach(key => {
+        clearScores[key] = clampNumber(data.clear_scores?.[key], 0, 2);
+    });
+    data.clear_scores = clearScores;
 
     // Validate strengths (1-3 items)
+    data.strengths = sanitizeStringArray(data.strengths, 3);
     if (!Array.isArray(data.strengths)) {
         errors.push('strengths must be an array');
-        data.strengths = [];
-    } else if (data.strengths.length > 3) {
-        data.strengths = data.strengths.slice(0, 3);
     }
 
     // Validate one_improvement (exactly 1 string)
-    if (typeof data.one_improvement !== 'string' || !data.one_improvement.trim()) {
+    data.one_improvement = sanitizeString(data.one_improvement || data.revision_target);
+    if (!data.one_improvement) {
         errors.push('one_improvement must be a non-empty string');
     }
 
     // Validate risks (array)
-    if (!Array.isArray(data.risks)) {
-        data.risks = [];
+    data.risks = sanitizeStringArray(data.risks, 3);
+
+    data.revision_target = sanitizeString(data.revision_target || data.one_improvement);
+    data.revision_checklist = sanitizeStringArray(data.revision_checklist || data.rewrite?.why_this_is_better, 3);
+    data.progress_status = inferProgressStatus(context.previousEvaluation, data.score_total);
+    data.progress_reason = sanitizeString(data.progress_reason, data.progress_status === 'first_attempt'
+        ? 'This is your first scored attempt in this scenario.'
+        : data.progress_status === 'improved'
+            ? 'You improved on the previous attempt by addressing part of the earlier gap.'
+            : data.progress_status === 'regressed'
+                ? 'This attempt lost one or more elements that were present before.'
+                : 'The score stayed flat because the main blocking issue is still unresolved.');
+    data.mode_applied = context.mode || sanitizeString(data.mode_applied, 'practice');
+
+    const primaryDimension = CLEAR_DIMENSIONS.includes(data.primary_focus?.clear_dimension)
+        ? data.primary_focus.clear_dimension
+        : CLEAR_DIMENSIONS.reduce((lowest, dim) => {
+            if (!lowest) return dim;
+            return data.clear_scores[dim] < data.clear_scores[lowest] ? dim : lowest;
+        }, null);
+
+    data.primary_focus = {
+        clear_dimension: primaryDimension,
+        label: CLEAR_LABELS[primaryDimension],
+        reason: sanitizeString(
+            data.primary_focus?.reason,
+            data.revision_target || `Focus on strengthening ${CLEAR_LABELS[primaryDimension]} next.`
+        )
+    };
+
+    data.clear_feedback = normalizeClearFeedback(data.clear_feedback, data.clear_scores, primaryDimension);
+    data.attempt_summary = sanitizeString(data.attempt_summary, data.progress_reason);
+
+    data.coaching_state = sanitizeString(
+        data.coaching_state,
+        inferCoachingState(data.mode_applied, data.progress_status, data.score_total, threshold)
+    );
+
+    data.support_level = sanitizeString(
+        data.support_level,
+        inferSupportLevel(
+            data.mode_applied,
+            context.scenarioId,
+            Number(context.attemptNumber) || 1,
+            data.progress_status,
+            data.score_total,
+            threshold
+        )
+    );
+
+    if (!data.scaffold || typeof data.scaffold !== 'object') {
+        data.scaffold = { title: '', items: [], note: '' };
     }
+    data.scaffold = {
+        title: sanitizeString(data.scaffold.title, data.support_level === 'scaffolded' ? 'Blueprint for your next attempt' : data.support_level === 'narrowed' ? 'What to include next' : ''),
+        items: sanitizeStringArray(data.scaffold.items, 3),
+        note: sanitizeString(data.scaffold.note)
+    };
 
     // Validate rewrite
     if (!data.rewrite || typeof data.rewrite !== 'object') {
         errors.push('rewrite must be an object');
-    } else {
-        if (typeof data.rewrite.best_practice_version !== 'string') {
-            errors.push('rewrite.best_practice_version must be a string');
-        }
-        if (!Array.isArray(data.rewrite.why_this_is_better)) {
-            data.rewrite.why_this_is_better = [];
-        } else if (data.rewrite.why_this_is_better.length > 3) {
-            data.rewrite.why_this_is_better = data.rewrite.why_this_is_better.slice(0, 3);
+    }
+    data.rewrite = {
+        best_practice_version: sanitizeString(data.rewrite?.best_practice_version),
+        why_this_is_better: sanitizeStringArray(data.rewrite?.why_this_is_better, 3)
+    };
+
+    if (data.mode_applied === 'practice') {
+        data.rewrite.best_practice_version = '';
+        if (data.rewrite.why_this_is_better.length === 0) {
+            data.rewrite.why_this_is_better = [...data.revision_checklist];
         }
     }
 
     // Validate one_coaching_question
-    if (typeof data.one_coaching_question !== 'string' || !data.one_coaching_question.trim()) {
+    data.one_coaching_question = sanitizeString(data.one_coaching_question, 'What will you add or change first in your next attempt?');
+    if (!data.one_coaching_question) {
         errors.push('one_coaching_question must be a non-empty string');
     }
+
+    data.pass_rationale = sanitizeString(
+        data.pass_rationale,
+        data.score_total >= threshold ? 'This response now meets the threshold because the key blocking issue was addressed clearly.' : ''
+    );
 
     return { data, errors };
 }
@@ -159,280 +355,91 @@ export default async function handler(req, res) {
         return res.status(500).json({ error: 'API key not configured' });
     }
 
+    const threshold = SCENARIO_THRESHOLDS[scenarioId] || 75;
+    const supportPolicy = scenarioId === 'S2'
+        ? 'Escalate from diagnosis to checklist on repeated stalled attempts, then to a blueprint scaffold.'
+        : scenarioId === 'S3'
+            ? 'Keep scaffolding minimal. Narrow the guidance, but do not provide a model answer or a solving blueprint.'
+            : 'Treat this as calibration. Provide the best-practice answer and light explanation only.';
+
     // Construct LLM Prompt
-    const systemPrompt = `FEEDBACK MODE:
-${mode}
+    const systemPrompt = `You are an expert communication coach evaluating assertive communication using ONLY the provided Knowledge Base.
 
-Where:
-- "calibration" = learner is being shown a best-practice example to study
-- "practice" = learner must generate their own improved response
-
-PREVIOUS EVALUATION (for scoring stability):
-${previousEvaluation ? JSON.stringify(previousEvaluation) : "none"}
-
-ATTEMPT NUMBER:
-${attemptNumber ?? 1}
-
-You are an expert communication coach. You evaluate learner responses using ONLY the concepts from the provided Knowledge Base. Do NOT introduce any new frameworks or terminology.
+Scenario ID: ${scenarioId}
+Feedback mode: ${mode}
+Passing threshold: ${threshold}
+Attempt number: ${attemptNumber ?? 1}
+Previous evaluation: ${previousEvaluation ? JSON.stringify(previousEvaluation) : 'none'}
+Scenario support policy: ${supportPolicy}
 
 KNOWLEDGE BASE:
 ${kbText}
 
----
+OUTPUT CONTRACT:
+- Return ONLY valid JSON.
+- Use this schema exactly:
+${JSON.stringify(EXPECTED_SCHEMA, null, 2)}
 
-STRICT OUTPUT RULES:
-1. Output ONLY valid JSON - no markdown, no code blocks, no extra text.
-2. Follow this exact schema:
-{
-  "style": "passive|aggressive|assertive|mixed",
-  "score_total": <0-100>,
-  "clear_scores": {
-    "connect": <0-2>,
-    "listen": <0-2>,
-    "express": <0-2>,
-    "align": <0-2>,
-    "review": <0-2>
-  },
-  "strengths": ["<1-3 items>"],
-  "one_improvement": "<exactly one focused coaching adjustment>",
-  "risks": ["<0+ items, flag hostile/inappropriate language if present>"],
-  "rewrite": {
-    "best_practice_version": "<calibration: 1-3 sentences with concrete next step/request | practice: empty string \"\">",
-    "why_this_is_better": ["<1-3 bullets referencing CLEAR or KB rules>"]
-  },
-  "one_coaching_question": "<prompt for reflection or second attempt>"
-}
+GLOBAL RULES:
+- Use calm, concrete, learner-facing coaching language.
+- Reference what the learner did or did not do.
+- Never moralize.
+- Never expose internal pattern IDs or evaluator mechanics.
+- The "style" field is internal only; do not mention style labels in learner-facing text.
+- CLEAR scores use 0=missing, 1=partial, 2=clear.
+- Overall score is 0-100 and should reflect CLEAR coverage, clarity, tone, and next-step quality.
 
-REWRITE RULES (CRITICAL):
+MODE RULES:
+- In calibration mode:
+  - Return one strong best-practice answer in rewrite.best_practice_version.
+  - Keep the explanation lightweight.
+  - Do not generate staged retry coaching.
+  - one_improvement should explain what makes the model answer stronger than weaker answers.
+- In practice mode:
+  - rewrite.best_practice_version MUST be an empty string.
+  - Never provide sentence wording, quoted phrases to copy, or a complete response.
+  - Diagnose ONE primary blocking issue only.
+  - Secondary issues must stay visibly lower priority.
+  - revision_target must be one concrete learner action for the next attempt.
+  - revision_checklist must be 2-3 structural checks, not wording examples.
+  - If the learner is stuck, scaffold structurally with components, a blueprint, or sentence roles, but NOT a complete answer.
 
-- If FEEDBACK MODE is "calibration":
-  - Provide a clear, complete best-practice response.
-  - This version may be used by the learner as a reference example.
-  - Ensure it aligns strongly with CLEAR and includes a concrete next step or request.
+PROGRESS RULES:
+- Compare this attempt with previousEvaluation when available.
+- If the learner fixed part of the prior blocking issue, progress_status should reflect improvement.
+- Do not remove previously earned strengths unless the learner clearly removed them.
+- If the learner regressed, explain what was lost.
+- attempt_summary should explain the current state in one sentence.
 
-- If FEEDBACK MODE is "practice":
-  - DO NOT provide a full rewritten response.
-  - Set "best_practice_version" to an empty string "".
-  - Use "why_this_is_better" to describe structural elements only (what to add or strengthen),
-    without phrasing, sentences, or example wording.
-  - In practice mode, do not include example sentences, quoted phrases, or "say/write…" wording guidance anywhere in the JSON fields. Describe only structural elements.
+COACHING STATE RULES:
+- coaching_state must be one of:
+  - calibration
+  - practice_progressing
+  - practice_stalled
+  - practice_regressed
+  - practice_passed
+- practice_passed should be used when the response meets or exceeds the passing threshold.
 
-CALIBRATION BEHAVIOR LOCK (CRITICAL):
+CLEAR FEEDBACK RULES:
+- clear_feedback must cover connect, listen, express, align, review.
+- Each dimension needs:
+  - score
+  - status
+  - what_worked
+  - what_to_fix
+  - priority
+- Exactly one dimension may have priority="primary" in practice mode.
 
-When feedback_mode === "calibration" (Scenario 1 / demonstration mode):
+SCAFFOLDING RULES:
+- support_level must be one of normal, narrowed, scaffolded.
+- For a first attempt, normal is preferred.
+- For repeated stalled attempts, narrowed or scaffolded may be used according to the scenario support policy.
+- scaffold.items must contain only structural prompts or components, never a full answer.
 
-1) OUTPUT RESTRICTIONS:
-   - Return ONLY the best-practice answer in "best_practice_version".
-   - The answer must demonstrate ALL 5 CLEAR steps naturally:
-     * (C) Open with acknowledgment or empathy
-     * (L) Reflect or validate their concern
-     * (E) State boundary/position with impact
-     * (A) Propose specific next step
-     * (R) Confirm agreement/check-back
-   - Keep it natural and human — NO checklist tone.
-   - Remove meta-explanations ("This shows..." / "Notice how...").
-   - Avoid hedging, ambiguity, or mixed intent.
-
-2) DISABLED FEATURES (CALIBRATION ONLY):
-   - DO NOT generate diagnostic feedback or coaching commentary.
-   - DO NOT generate practice cues or retry hints.
-   - DO NOT reference attemptNumber — ignore it completely.
-   - DO NOT use stuck detection logic — bypass entirely.
-   - DO NOT escalate or adapt based on retries — output is static.
-   - DO NOT provide "one_improvement" as coaching — frame as observation only.
-
-3) FIELD BEHAVIOR IN CALIBRATION:
-   - "strengths": List 1-2 observable elements present in the best-practice version.
-   - "one_improvement": Observation about what differentiates this answer from weaker ones (NOT a coaching instruction).
-   - "risks": Empty array [].
-   - "why_this_is_better": 1-2 bullets describing structural elements demonstrated.
-   - "one_coaching_question": A reflective prompt for the learner to internalize the example.
-
-4) LEAKAGE PREVENTION:
-   - NEVER reuse calibration logic in practice mode.
-   - Practice scenarios MUST NEVER surface the full model answer.
-   - Calibration content is for demonstration only — not coaching material.
-
-ONE_IMPROVEMENT RULES:
-
-- In "calibration" mode:
-  - Frame the improvement as an observation about what differentiates this response from weaker ones.
-  - It may reference what is present in the best-practice version.
-
-- In "practice" mode:
-  - Frame the improvement as a missing or weak structural element.
-  - It must be score-predictive.
-  - Do NOT suggest wording, sentences, or example phrases.
-
-SCORING STABILITY RULE:
-
-- If the learner incorporates the previous "one_improvement" correctly,
-  the score must increase or remain the same.
-- Do not reduce previously earned CLEAR sub-scores unless the learner explicitly removes
-  or contradicts that element.
-
-STUCK DETECTION RULE:
-
-- If attemptNumber is 2 or higher
-  AND previousEvaluation is provided
-  AND score_total has NOT increased compared to previousEvaluation.score_total:
-
-  Then:
-  - Explicitly state which ONE CLEAR element (Connect, Listen, Express, Align, or Review)
-    is currently missing or weakest and is blocking improvement.
-  - Reference only that single CLEAR element.
-  - Do NOT provide example sentences or phrasing.
-  - Use structural, diagnostic language only.
-
-SCORING GUIDANCE:
-- CLEAR sub-scores: 0 = missing/opposite, 1 = partial/weak, 2 = clearly present
-- Overall score: Derive from sub-scores + quality signals (clarity, tone, specificity)
-- If learner input is hostile: add to risks array, still provide respectful rewrite
-
-TONE & LANGUAGE RULES (CRITICAL):
-- Write like a calm, supportive coach focusing on IMPACT and NEXT STEPS
-- NEVER use analytical style labels in learner-facing text (e.g., "The aggressive style aims to...", "passive style...", "assertive approach...")
-- NEVER use moralizing words like "bad", "wrong", "dominate", "manipulative"
-- INSTEAD, use impact-focused phrasing:
-  * "This response may come across as dismissive..."
-  * "This could be perceived as confrontational..."
-  * "This might make it harder to maintain collaboration..."
-  * "The other person may feel unheard..."
-  * "This phrasing could unintentionally escalate tension..."
-- Focus on observable impact, not character judgment
-- Keep feedback constructive and forward-looking
-- The "style" field is for internal scoring only - do NOT reference it in strengths, one_improvement, risks, or rewrite
-
-CLEAR ANCHORS (Light References):
-- Include 1-2 CLEAR step references (max) across the ENTIRE response to help learners connect feedback to the CLEAR framework
-- Use sparingly and naturally - do NOT force mentions in every field
-- In "one_improvement": optionally prefix with (Connect), (Listen), (Express), (Align), or (Review) when it fits naturally
-- In "rewrite.why_this_is_better": include at most 1-2 CLEAR references total across all bullets
-- Format examples:
-  * "(Express) Add a clear 'I' statement that names your constraint."
-  * "(Align) Propose a concrete next step with a time or date."
-  * "This version includes a Listen moment to acknowledge their concern."
-- Do NOT overuse: no more than 2 CLEAR mentions total in the entire JSON response
-
-CLEAR FEEDBACK MICRO-FORMAT (CRITICAL):
-
-For EACH of the 5 CLEAR dimensions (Connect, Listen, Express, Align, Review), generate feedback text internally using this strict 3-line format:
-
-  Line 1 - What worked: One specific element from the learner's answer that demonstrates this dimension (or "Not yet demonstrated" if score=0).
-  Line 2 - What's missing: One specific, observable element missing from the learner's answer. Reference concrete absence (e.g., "missing acknowledgment of their concern", "no specific timeframe proposed", "boundary stated but no request attached").
-  Line 3 - Micro-fix: One actionable instruction starting with a verb (e.g., "Add...", "Include...", "State...", "Propose...", "Acknowledge...").
-
-LENGTH CONSTRAINTS:
-- Each line MUST be 8-20 words. No shorter, no longer.
-- No extra paragraphs, bullet lists, or headers.
-- Keep all 3 lines as plain sentences.
-
-TONE CONSTRAINTS:
-- Calm, direct, supportive, non-chatty.
-- No moralizing ("you should have...", "it's important to...").
-- No lecturing or over-explaining.
-- Never say "as an AI" or similar.
-- Focus on observable behavior, not character.
-
-ANTI-REPETITION RULE (CRITICAL):
-- The "What's missing" line MUST be unique across all 5 CLEAR dimensions for a given attempt.
-- If two dimensions would naturally point to the same gap, assign the diagnostic to the MOST relevant dimension and find a different (true) gap for the other.
-- Example: If both Express and Align lack specificity, assign "missing specific request" to Express and assign "missing proposed timeline" to Align.
-
-SPECIFICITY RULE:
-- Every "What's missing" must reference an observable element in the learner's answer.
-- BAN vague phrases unless tied to a concrete missing element:
-  * BANNED: "be clearer", "communicate better", "more assertive", "try harder"
-  * ALLOWED: "missing acknowledgment of their deadline pressure", "no 'I' statement present", "request lacks a specific action or date"
-
-PRACTICE CUE ALIGNMENT (CRITICAL):
-
-1) SINGLE SOURCE OF TRUTH:
-   - First, identify the BLOCKING_STEP: the lowest-scoring CLEAR dimension (0 or 1) that is most critical.
-   - Priority order for tie-breaking: Listen > Express > Align > Connect > Review.
-   - The `one_improvement` field MUST target this BLOCKING_STEP and no other.
-   - The internal practice cue used in feedback MUST also reference the same BLOCKING_STEP.
-
-2) ONE_IMPROVEMENT FORMAT:
-   - MUST start with the BLOCKING_STEP prefix: "(Connect)", "(Listen)", "(Express)", "(Align)", or "(Review)".
-   - MUST be 12-18 words, exactly 1 sentence.
-   - MUST be actionable (start with a verb after the prefix).
-
-3) STEP-SPECIFIC CUE TEMPLATES:
-   Use these as structural guides for the BLOCKING_STEP cue:
-   
-   CONNECT: "Acknowledge their perspective or concern before stating your position."
-   LISTEN: "Reflect their concern in one line to confirm you understood correctly."
-   EXPRESS: "State your boundary or request directly with a clear impact statement."
-   ALIGN: "Propose one concrete next step with owner and timeframe, then ask for agreement."
-   REVIEW: "Confirm mutual agreement with who does what by when, plus a check-back point."
-
-4) PREVENT MIXED SIGNALS:
-   - For NON-BLOCKING steps (not the BLOCKING_STEP), the "What's missing" line must be LOW-STAKES.
-   - Use softer framing for non-blocking steps:
-     * "A small upgrade would be…"
-     * "You could strengthen this by…"
-     * "Nice to add but not critical…"
-   - Do NOT introduce a competing "primary fix" in any step other than the BLOCKING_STEP.
-   - The learner must receive ONE clear improvement target, not multiple equal-priority fixes.
-
-5) ALIGNMENT CHECK:
-   Before finalizing output, verify:
-   - `one_improvement` prefix matches the BLOCKING_STEP.
-   - The BLOCKING_STEP's feedback contains the highest-priority "What's missing".
-   - All other steps have softer, secondary improvement language.
-
-Apply this micro-format internally when generating the "strengths", "one_improvement", and "rewrite.why_this_is_better" fields. The resulting text should feel consistent, diagnostic, and actionable across all CLEAR dimensions.
-
-INTERNAL IMPROVEMENT PATTERNS (Step 7 - INTERNAL GUIDANCE ONLY):
-
-Use these patterns to anchor consistent, non-repetitive feedback. Select the best-matching pattern for the BLOCKING_STEP based on what is missing in the learner's answer.
-
-CONNECT PATTERNS:
-  P1: Missing opener - No empathy or acknowledgment before stating position
-  P2: Blaming opener - Opens with accusation or defensiveness
-  P3: Missing context validation - Doesn't acknowledge their situation/constraints
-  P4: Cold/transactional tone - Jumps straight to business without warmth
-  P5: Over-apologizing - Excessive disclaimers that undermine position
-
-LISTEN PATTERNS:
-  P1: No reflection - Doesn't echo or summarize their concern
-  P2: Misread concern - Reflects the wrong issue or misinterprets
-  P3: Dismissive acknowledgment - Surface acknowledgment without substance
-  P4: Assumed understanding - Skips confirmation that they understood correctly
-  P5: Interrupting tone - Jumps to solution before validating their perspective
-
-EXPRESS PATTERNS:
-  P1: Missing "I" statement - No ownership of position/constraint
-  P2: Vague boundary - Boundary stated but not specific or actionable
-  P3: Missing impact - States position but not why it matters
-  P4: Passive phrasing - Indirect/hedging language instead of clear statement
-  P5: Mixed signals - Says yes and no in same breath, confusing intent
-  P6: Missing request - States constraint but no ask attached
-
-ALIGN PATTERNS:
-  P1: No next step - Missing concrete proposed action
-  P2: Vague timeline - Next step lacks specific when/who/what
-  P3: One-sided solution - Proposes action without seeking agreement
-  P4: Too many options - Multiple competing proposals confuse action
-  P5: No ownership - Next step lacks clear owner (who does what)
-  P6: Missing ask - Proposes but doesn't confirm "does this work?"
-
-REVIEW PATTERNS:
-  P1: No check-back - Missing follow-up or confirmation point
-  P2: No recap - Ends without summarizing agreed action
-  P3: Vague close - Ends ambiguously without clear conclusion
-  P4: Missing accountability - No who/what/when confirmation
-  P5: No verification ask - Doesn't confirm mutual understanding
-
-PATTERN USAGE RULES:
-1) For the BLOCKING_STEP only, select ONE pattern that best matches the gap.
-2) Use the pattern to guide "What's missing" and "Micro-fix" phrasing.
-3) Keep one_improvement aligned with the selected pattern's focus.
-4) If previousEvaluation exists: prefer a DIFFERENT pattern than last attempt (rotation).
-5) If pattern confidence is low, use generic diagnostic language.
-6) NEVER stack multiple patterns in one attempt.
-7) NEVER expose pattern IDs to the learner - these are internal only.
+QUALITY BAR:
+- The feedback must help the learner revise their own answer.
+- The response must feel like coaching, not correction by replacement.
+- The learner should always know what to do next without being handed wording.
 
 EVALUATE THE FOLLOWING:`;
 
@@ -455,7 +462,7 @@ Provide your evaluation as strict JSON only.`;
             const controller = new AbortController();
             const timeoutId = setTimeout(() => controller.abort(), 30000); // 30s timeout
 
-            const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`, {
+            const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${DEFAULT_GEMINI_MODEL}:generateContent?key=${apiKey}`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 signal: controller.signal,
@@ -552,7 +559,7 @@ ${responseText}
 
 Output corrected JSON only:`;
 
-            const retryResponse = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`, {
+            const retryResponse = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${DEFAULT_GEMINI_MODEL}:generateContent?key=${apiKey}`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
@@ -582,7 +589,12 @@ Output corrected JSON only:`;
     }
 
     // Validate and clamp response
-    const { data: validatedData, errors } = validateAndClampResponse(parsedData);
+    const { data: validatedData, errors } = validateAndClampResponse(parsedData, {
+        mode,
+        previousEvaluation,
+        attemptNumber,
+        scenarioId
+    });
 
     if (errors.length > 0) {
         console.warn('Validation warnings:', errors);

@@ -112,6 +112,20 @@ const AI_COACH_STATES = ['clear_model_intro', 'activity', 'activity_sofia', 'act
 let aiCoachHistory = [];
 let aiCoachUserInput = ''; // Preserved textarea input
 
+function createInitialAiCoachSession() {
+    return {
+        hasEvaluated: false,
+        lastFeedback: null,
+        lastReport: null,
+        isLoading: false,
+        previousEvaluation: null,
+        previousAttempt: null,
+        currentAttempt: null,
+        retryFocus: null,
+        showRetryHint: true
+    };
+}
+
 function isAiCoachState(stateId) {
     return AI_COACH_STATES.includes(stateId);
 }
@@ -254,6 +268,7 @@ function go(nextStateId) {
     if (isAiCoachState(currentStateId) && !isAiCoachState(nextStateId)) {
         aiCoachHistory = [];
         aiCoachUserInput = '';
+        aiCoachSession = createInitialAiCoachSession();
         console.log('[AI Coach History] Cleared (left AI Coach scope)');
     }
 
@@ -1164,16 +1179,7 @@ function renderWrapupScreen(state) {
 
 // --- AI Coach State Renderer ---
 // Session state for AI Coach (to track evaluation status)
-let aiCoachSession = {
-    hasEvaluated: false,
-    lastFeedback: null,
-    isLoading: false,
-    // Attempt history for progress tracking
-    previousAttempt: null,     // { userAnswer, clearScores }
-    currentAttempt: null,      // { userAnswer, clearScores }
-    retryFocus: null,          // { dimensionKey, label, hint }
-    showRetryHint: true        // Controls visibility of hint (dismissible)
-};
+let aiCoachSession = createInitialAiCoachSession();
 
 // --- Retry Focus & Progress Helpers ---
 
@@ -1243,18 +1249,38 @@ function computeProgressLine(previousScores, currentScores) {
  * Build a structured CLEAR Coaching Report from evaluation data.
  */
 function buildClearCoachingReport(data) {
-    // Map API snake_case to internal variables
     const clearScores = data.clear_scores || data.clearScores || {};
+    const dimensions = ['connect', 'listen', 'express', 'align', 'review'];
+    const labels = { connect: 'Connect', listen: 'Listen', express: 'Express', align: 'Align', review: 'Review' };
+
+    if (data.clear_feedback && typeof data.clear_feedback === 'object') {
+        const report = {};
+
+        dimensions.forEach(dim => {
+            const item = data.clear_feedback[dim] || {};
+            const score = item.score ?? clearScores[dim] ?? 0;
+            const worked = item.what_worked ? `What worked: ${item.what_worked}` : score > 0 ? `What worked: ${labels[dim]} is present.` : 'What worked: Not yet demonstrated.';
+            const fix = item.what_to_fix ? `What to fix: ${item.what_to_fix}` : score < 2 ? `What to fix: Strengthen ${labels[dim]} next.` : '';
+            const text = fix ? `${worked} ${fix}` : worked;
+
+            report[dim] = {
+                label: labels[dim],
+                score,
+                text,
+                cue: item.what_to_fix || data.revision_target || 'Keep the same strength on your next attempt.',
+                example: '',
+                priority: item.priority || 'secondary'
+            };
+        });
+
+        return report;
+    }
+
     const strengths = data.strengths || [];
     const keyImprovement = data.one_improvement || data.keyImprovement || '';
     const risks = data.risks || [];
     const pointsToConsider = data.pointsToConsider || [];
-
-    // Combine risks and pointsToConsider
     const improvementPoints = [...(risks || []), ...(pointsToConsider || [])];
-
-    const dimensions = ['connect', 'listen', 'express', 'align', 'review'];
-    const labels = { connect: 'Connect', listen: 'Listen', express: 'Express', align: 'Align', review: 'Review' };
 
     // Keywords for mapping strengths/gaps to dimensions
     const keywords = {
@@ -1403,6 +1429,7 @@ function showRetryFocusHint(inputSection) {
 
 function renderAiCoachState(state) {
     console.log(`[Render] AI Coach State: ${state.id}`);
+    const feedbackMode = state.feedbackMode || 'practice';
 
     const stage = ensureStage();
 
@@ -1625,7 +1652,13 @@ function renderAiCoachState(state) {
 
     // If we have previous feedback, show it
     if (aiCoachSession.lastFeedback) {
-        renderFeedback(feedbackPanel, aiCoachSession.lastFeedback);
+        renderFeedback(
+            feedbackPanel,
+            aiCoachSession.lastFeedback,
+            state.situationText,
+            state.scenarioId,
+            feedbackMode
+        );
     }
 
     overlay.appendChild(container);
@@ -1653,9 +1686,12 @@ function renderAiCoachState(state) {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
-                    scenarioId: state.id,
+                    scenarioId: state.scenarioId,
                     situationText: state.situationText,
-                    learnerAnswer: userAnswer
+                    learnerAnswer: userAnswer,
+                    feedbackMode,
+                    previousEvaluation: aiCoachSession.previousEvaluation,
+                    attemptNumber: (activityProgress.scenarios[state.scenarioId]?.attempts.length || 0) + 1
                 })
             });
 
@@ -1670,6 +1706,7 @@ function renderAiCoachState(state) {
             // Store feedback and update session
             aiCoachSession.lastFeedback = feedback;
             aiCoachSession.hasEvaluated = true;
+            aiCoachSession.previousEvaluation = feedback;
 
             // Generate and store report
             aiCoachSession.lastReport = buildClearCoachingReport(feedback);
@@ -1691,7 +1728,7 @@ function renderAiCoachState(state) {
             const config = scenarioId ? SCENARIO_CONFIG[scenarioId] : null;
 
             // Render feedback with progression context
-            renderFeedback(feedbackPanel, feedback, state.situationText, scenarioId);
+            renderFeedback(feedbackPanel, feedback, state.situationText, scenarioId, feedbackMode);
 
             // Gate Continue button based on sticky pass (or practice mode)
             if (PRACTICE_MODE || (scenarioProgress && scenarioProgress.scenarioPassed)) {
@@ -1808,16 +1845,7 @@ function renderAiCoachState(state) {
         // Clear preserved user input for fresh start on next scenario
         aiCoachUserInput = '';
         // Reset AI Coach session for next activity (full reset)
-        aiCoachSession = {
-            hasEvaluated: false,
-            lastFeedback: null,
-            lastReport: null,
-            isLoading: false,
-            previousAttempt: null,
-            currentAttempt: null,
-            retryFocus: null,
-            showRetryHint: true
-        };
+        aiCoachSession = createInitialAiCoachSession();
 
         // Determine next scenario
         const nextScenarioId = getNextScenarioId(scenarioId);
@@ -1843,30 +1871,90 @@ function renderAiCoachState(state) {
     });
 }
 
-function renderFeedback(container, feedback, situationText, scenarioId) {
+function renderFeedback(container, feedback, situationText, scenarioId, feedbackMode = 'practice') {
     container.innerHTML = '';
 
     const panel = document.createElement('div');
     panel.className = 'ai-coach-feedback';
+    const isCalibrationMode = feedbackMode === 'calibration';
+
+    const createSection = (title, text, className = 'ai-coach-section') => {
+        if (!text) return null;
+
+        const section = document.createElement('div');
+        section.className = className;
+
+        const heading = document.createElement('h3');
+        heading.className = 'clear-coaching-title';
+        heading.textContent = title;
+        section.appendChild(heading);
+
+        const body = document.createElement('p');
+        body.className = 'clear-coaching-text';
+        body.textContent = text;
+        section.appendChild(body);
+
+        return section;
+    };
+
+    const createListSection = (title, items, className = 'ai-coach-section') => {
+        if (!Array.isArray(items) || items.length === 0) return null;
+
+        const section = document.createElement('div');
+        section.className = className;
+
+        const heading = document.createElement('h3');
+        heading.className = 'clear-coaching-title';
+        heading.textContent = title;
+        section.appendChild(heading);
+
+        const list = document.createElement('ul');
+        items.forEach(item => {
+            const li = document.createElement('li');
+            li.textContent = item;
+            list.appendChild(li);
+        });
+        section.appendChild(list);
+
+        return section;
+    };
 
     // --- Build sections (don't append yet) ---
-
-    // Progress since last attempt (if retry)
     let progressSection = null;
-    if (aiCoachSession.previousAttempt && feedback.clear_scores) {
-        const progressText = computeProgressLine(
-            aiCoachSession.previousAttempt.clearScores,
-            feedback.clear_scores
-        );
-
-        if (progressText) {
-            progressSection = document.createElement('div');
-            progressSection.className = 'ai-coach-progress-line';
-            progressSection.textContent = progressText;
-        }
+    const progressText = feedback.attempt_summary || feedback.progress_reason || (
+        aiCoachSession.previousAttempt && feedback.clear_scores
+            ? computeProgressLine(aiCoachSession.previousAttempt.clearScores, feedback.clear_scores)
+            : null
+    );
+    if (progressText) {
+        progressSection = document.createElement('div');
+        progressSection.className = 'ai-coach-progress-line';
+        progressSection.textContent = progressText;
     }
 
-    // Key Improvement (Removed/Integrated into Report)
+    const primaryFocusText = feedback.primary_focus
+        ? `${feedback.primary_focus.label}: ${feedback.primary_focus.reason}`
+        : '';
+    const primaryFocusSection = !isCalibrationMode
+        ? createSection('Primary Focus', primaryFocusText, 'ai-coach-section ai-coach-primary-improvement')
+        : null;
+    const revisionTargetSection = !isCalibrationMode
+        ? createSection('Revision Target', feedback.revision_target || feedback.one_improvement)
+        : createSection('Why This Works', feedback.one_improvement, 'ai-coach-section ai-coach-primary-improvement');
+    const checklistSection = !isCalibrationMode
+        ? createListSection('Checklist For Your Revision', feedback.revision_checklist || feedback.rewrite?.why_this_is_better)
+        : null;
+    const scaffoldSection = (!isCalibrationMode && feedback.scaffold && (feedback.scaffold.items?.length || feedback.scaffold.note))
+        ? createListSection(feedback.scaffold.title || 'Blueprint For Your Next Attempt', feedback.scaffold.items, 'ai-coach-section')
+        : null;
+    if (scaffoldSection && feedback.scaffold.note) {
+        const scaffoldNote = document.createElement('p');
+        scaffoldNote.className = 'clear-coaching-text';
+        scaffoldNote.textContent = feedback.scaffold.note;
+        scaffoldSection.appendChild(scaffoldNote);
+    }
+    const questionSection = createSection('Reflection Question', feedback.one_coaching_question);
+    const passSection = createSection('Why This Passes', feedback.pass_rationale);
 
     // Score Header
     const scoreHeader = document.createElement('div');
@@ -2048,7 +2136,7 @@ function renderFeedback(container, feedback, situationText, scenarioId) {
 
     const reportTitle = document.createElement('h3');
     reportTitle.className = 'clear-coaching-title';
-    reportTitle.textContent = 'CLEAR Coaching Report';
+    reportTitle.textContent = isCalibrationMode ? 'CLEAR Breakdown' : 'CLEAR Coaching Report';
     reportContainer.appendChild(reportTitle);
 
     const reportList = document.createElement('div');
@@ -2061,6 +2149,9 @@ function renderFeedback(container, feedback, situationText, scenarioId) {
         const item = coachingReport[dim];
         const line = document.createElement('div');
         line.className = `clear-coaching-line score-${item.score}`;
+        if (item.priority === 'primary') {
+            line.classList.add('primary-focus-line');
+        }
 
         const header = document.createElement('div');
         header.className = 'clear-coaching-header';
@@ -2091,25 +2182,19 @@ function renderFeedback(container, feedback, situationText, scenarioId) {
     reportContainer.appendChild(reportList);
     // reportContainer will be appended in the final section
 
-    // Rewrite (Collapsible - default collapsed)
-    // Only show if suggested answer is unlocked for this scenario
+    // Rewrite (Calibration only)
     let rewriteSection = null;
-    const showSuggested = scenarioId ? isSuggestedAnswerUnlocked(scenarioId) : true;
-    if (feedback.rewrite && showSuggested) {
+    const showSuggested = isCalibrationMode;
+    const hasRewriteText = Boolean(feedback.rewrite?.best_practice_version);
+    const hasWhyBullets = Boolean(feedback.rewrite?.why_this_is_better && feedback.rewrite.why_this_is_better.length > 0);
+
+    if (feedback.rewrite && showSuggested && (hasRewriteText || hasWhyBullets)) {
         rewriteSection = document.createElement('div');
         rewriteSection.className = 'ai-coach-section ai-coach-collapsible';
 
-        // Toggle button
-        const toggleBtn = document.createElement('button');
-        toggleBtn.className = 'ai-coach-toggle-btn';
-        toggleBtn.textContent = 'Show suggested response';
-        toggleBtn.setAttribute('aria-expanded', 'false');
-        rewriteSection.appendChild(toggleBtn);
-
-        // Collapsible content wrapper
         const rewriteContent = document.createElement('div');
         rewriteContent.className = 'ai-coach-collapsible-content';
-        rewriteContent.style.display = 'none'; // Collapsed by default
+        rewriteContent.style.display = 'block';
 
         const rewriteBox = document.createElement('div');
         rewriteBox.className = 'rewrite-box';
@@ -2133,92 +2218,29 @@ function renderFeedback(container, feedback, situationText, scenarioId) {
 
         rewriteContent.appendChild(rewriteBox);
         rewriteSection.appendChild(rewriteContent);
-
-        // Toggle logic
-        toggleBtn.addEventListener('click', () => {
-            const isExpanded = rewriteContent.style.display !== 'none';
-            rewriteContent.style.display = isExpanded ? 'none' : 'block';
-            toggleBtn.textContent = isExpanded ? 'Show suggested response' : 'Hide suggested response';
-            toggleBtn.setAttribute('aria-expanded', String(!isExpanded));
-        });
-    }
-
-    // Practice Cue (replaces Coaching Question)
-    // Find lowest CLEAR dimension and use its cue
-    let practiceCueSection = null;
-    if (coachingReport) {
-        const priorityOrder = ['listen', 'express', 'align', 'connect', 'review'];
-        const clearScores = feedback.clear_scores || {};
-
-        // Find lowest score with priority tie-breaking
-        const minScore = Math.min(...Object.values(clearScores));
-        const focusKey = priorityOrder.find(k => (clearScores[k] ?? 0) === minScore) || 'listen';
-        const focusDim = coachingReport[focusKey];
-
-        if (focusDim && focusDim.cue) {
-            practiceCueSection = document.createElement('div');
-            practiceCueSection.className = 'practice-cue';
-            practiceCueSection.id = 'practice-cue-box';
-
-            // Format: "Practice cue (Listen)"
-            const cueLabel = document.createElement('span');
-            cueLabel.className = 'practice-cue-label';
-            cueLabel.textContent = `Practice cue (${focusDim.label})`;
-
-            const cueText = document.createElement('p');
-            cueText.className = 'practice-cue-text';
-
-            // Build practice cue: max 110 chars, one complete sentence
-            let rawCue = focusDim.cue.replace(/\?/g, '').trim();
-            // Remove leading "Try:" or "Try to:" if present
-            rawCue = rawCue.replace(/^Try:?\s*/i, '').replace(/^Try to:?\s*/i, '');
-            // Remove trailing periods
-            rawCue = rawCue.replace(/\.+$/, '').trim();
-
-            // Build the full cue
-            const prefix = 'On your next attempt, try ';
-            let actionPart = rawCue.charAt(0).toLowerCase() + rawCue.slice(1);
-            let cueContent = prefix + actionPart + '.';
-
-            // If too long, shorten the action part intelligently
-            const maxLen = 110;
-            if (cueContent.length > maxLen) {
-                // Try to find a natural break point (comma, semicolon, or word boundary)
-                const availableLen = maxLen - prefix.length - 1; // -1 for final period
-                let shortened = actionPart.substring(0, availableLen);
-
-                // Find last complete word boundary
-                const lastSpace = shortened.lastIndexOf(' ');
-                if (lastSpace > availableLen * 0.5) {
-                    shortened = shortened.substring(0, lastSpace);
-                }
-
-                // Clean up any trailing punctuation or incomplete phrases
-                shortened = shortened.replace(/[,;:\s]+$/, '').trim();
-
-                cueContent = prefix + shortened + '.';
-            }
-
-            cueText.textContent = cueContent;
-
-            practiceCueSection.appendChild(cueLabel);
-            practiceCueSection.appendChild(cueText);
-        }
     }
 
     // --- Append in layout order ---
     // 0. Progress since last attempt (if retry)
     if (progressSection) panel.appendChild(progressSection);
-    // 1. Overall Score (TOP)
-    panel.appendChild(scoreHeader);
-    // 2. CLEAR Score Tiles
-    if (clearGrid) panel.appendChild(clearGrid);
-    // 3. CLEAR Coaching Report (detailed feedback)
-    panel.appendChild(reportContainer);
-    // 4. Suggested Response (collapsible)
-    if (rewriteSection) panel.appendChild(rewriteSection);
-    // 5. Practice Cue (action bridge at bottom)
-    if (practiceCueSection) panel.appendChild(practiceCueSection);
+    if (isCalibrationMode) {
+        if (revisionTargetSection) panel.appendChild(revisionTargetSection);
+        if (rewriteSection) panel.appendChild(rewriteSection);
+        panel.appendChild(scoreHeader);
+        if (clearGrid) panel.appendChild(clearGrid);
+        panel.appendChild(reportContainer);
+        if (questionSection) panel.appendChild(questionSection);
+    } else {
+        if (primaryFocusSection) panel.appendChild(primaryFocusSection);
+        if (revisionTargetSection) panel.appendChild(revisionTargetSection);
+        if (checklistSection) panel.appendChild(checklistSection);
+        if (clearGrid) panel.appendChild(clearGrid);
+        panel.appendChild(reportContainer);
+        if (scaffoldSection) panel.appendChild(scaffoldSection);
+        panel.appendChild(scoreHeader);
+        if (passSection) panel.appendChild(passSection);
+        if (questionSection) panel.appendChild(questionSection);
+    }
 
     container.appendChild(panel);
 }
