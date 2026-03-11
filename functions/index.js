@@ -481,8 +481,9 @@ Provide your evaluation as strict JSON only.`;
                             { role: 'user', parts: [{ text: systemPrompt + '\n\n' + userPrompt }] }
                         ],
                         generationConfig: {
-                            temperature: 0.3,
-                            maxOutputTokens: 2048
+                            responseMimeType: 'application/json',
+                            temperature: 0.2,
+                            maxOutputTokens: 3072
                         }
                     })
                 });
@@ -569,8 +570,9 @@ Output corrected JSON only:`;
                             { role: 'user', parts: [{ text: fixPrompt }] }
                         ],
                         generationConfig: {
+                            responseMimeType: 'application/json',
                             temperature: 0.1,
-                            maxOutputTokens: 2048
+                            maxOutputTokens: 3072
                         }
                     })
                 });
